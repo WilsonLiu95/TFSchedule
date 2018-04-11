@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="./lib/element-ui.css">
+</head>
+
+<body>
+  <div id="app">
+    <el-menu theme="dark" mode="horizontal" @select="pageSelect" default-active="index.html">
+      <el-menu-item index="">批跑系统</el-menu-item>
+      <el-menu-item index="index.html">任务列表</el-menu-item>
+      <el-menu-item index="record.html">任务执行记录</el-menu-item>
+    </el-menu>
+    <el-card class="box-card">
+      <div v-if="taskList.length">
+
+        <el-button type='info' @click="showTaskDialog()">新增任务</el-button>
+
+        <el-table :data="showTaskList" style="width: 100%" border>
+          <el-table-column prop="task_name" label="任务名">
+          </el-table-column>
+          <el-table-column prop="title" label="title" >
+          </el-table-column>
+          <el-table-column prop="rtx_list" label="相关责任人">
+          </el-table-column>
+          <el-table-column prop="rule" label="定时规则">
+          </el-table-column>
+          <el-table-column prop="operator" label="最后操作人">
+          </el-table-column>
+          <el-table-column prop="modify_time" label="修改时间" :formatter="timeFormat">
+          </el-table-column>
+          <el-table-column label="任务状态" >
+            <template scope="scope">
+              <span>{{getTaskStatusTip(scope.row)}}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="250">
+            <template scope="scope">
+              <el-button type='info' size="small" @click="showTaskDialog(scope.row)">修改</el-button>
+              <el-button v-if="scope.row.task_status==1" @click="changTaskStatus(scope.row, 0)" size="small" type='primary'>恢复有效</el-button>
+              <el-button v-if="scope.row.task_status==0 && !(isTaskExec(scope.row))" @click="changTaskStatus(scope.row, 1)" size="small" type='danger'>设置无效</el-button>
+              <el-button v-if="scope.row.task_status==0 && (isTaskExec(scope.row)) " @click="changTaskStatus(scope.row, 2)" size="small" type='danger'>杀死当前执行中的进程</el-button>
+              <el-button v-if="scope.row.task_status==0" @click="changTaskStatus(scope.row, 3)" type='primary' size="small">手动执行</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-pagination @size-change="handleSizeChange" :current-page.sync="currentPage" :page-sizes="[15, 30, 50, 100]" :page-size.sync="pageSize"
+        layout="total, sizes, prev, pager, next, jumper" :total="taskList.length">
+      </el-pagination>
+        <el-dialog title="任务信息" :visible.sync="dialog.dialogFormVisible" size="small">
+          <el-form :model="dialog.taskInfo" :rules="dialog.rules" ref="dialog_taskInfo" label-width="120px">
+            <el-form-item label="任务名称" prop='task_name'>
+              <el-input v-model="dialog.taskInfo.task_name" size="small" placeholder="请输入内容" required></el-input>
+            </el-form-item>
+            <el-form-item label="定时规则" prop='rule'>
+              <el-input v-model="dialog.taskInfo.rule" size="small" placeholder="请输入内容" required></el-input>
+            </el-form-item>
+            <el-form-item label="相关责任人" prop='rtx_list'>
+              <el-input v-model="dialog.taskInfo.rtx_list" size="small" placeholder="异常将会告警这些人，以分号分隔"></el-input>
+            </el-form-item>
+            <el-form-item label="title" prop='title'>
+              <el-input v-model="dialog.taskInfo.title" size="small" placeholder="标题"></el-input>
+            </el-form-item>
+            <el-form-item label="描述" prop='description'>
+              <el-input v-model="dialog.taskInfo.description" size="small" placeholder="任务描述"></el-input>
+            </el-form-item>
+            <el-form-item label="超时设置/秒" prop='timeout'>
+              <el-input v-model="dialog.taskInfo.timeout" size="small" type='number' placeholder="多久算超时"></el-input>
+            </el-form-item>
+            <el-form-item label="状态" prop='task_status'>
+              <el-select v-model="dialog.taskInfo.task_status" placeholder="任务状态">
+                <el-option label="有效" :value="0"></el-option>
+                <el-option label="无效" :value="1"></el-option>
+              </el-select>
+            </el-form-item>
+          </el-form>
+          <div slot="footer" class="dialog-footer">
+            <el-button @click="dialog.dialogFormVisible = false">取 消</el-button>
+            <el-button type="primary" @click="updateTaskInfo(dialog.taskInfo)">确 定</el-button>
+          </div>
+        </el-dialog>
+      </div>
+    </el-card>
+  </div>
+</body>
+<!-- 先引入 Vue -->
+<script src="./lib/vue.min.js"></script>
+<script src="./lib/moment.min.js"></script>
+<script src="./lib/axios.min.js"></script>
+<!-- 引入组件库 -->
+<script src="./lib/element-ui.js"></script>
+<script>
+  function parseQueryString(url) {
+    var obj = {};
+    var keyvalue = [];
+    var key = "",
+      value = "";
+    var paraString = url.substring(url.indexOf("?") + 1, url.length).split("&");
+    for (var i in paraString) {
+      keyvalue = paraString[i].split("=");
+      key = keyvalue[0];
+      value = keyvalue[1];
+      obj[key] = value;
+    }
+    return obj;
+  }
+  var url_prefix = /localhost/.test(location.href) ? '/' : '/lct_schedule/';
+  var publishRequestLock = false;
+</script>
+<script>
+  var vueItem = new Vue({
+    el: '#app',
+    data: function () {
+      return {
+        dialog: {
+          dialogFormVisible: false,
+          taskInfo: {},
+          rules: {
+            task_name: [
+              { required: true, message: '请输入任务名称', trigger: 'blur' },
+              { min: 4, max: 40, message: '长度在 4 到 40 个字符', trigger: 'blur' }
+            ],
+            rtx_list: [
+              { required: true, message: '请输入相关责任人，以分号分隔', trigger: 'blur' },
+            ],
+            rule: [
+              { required: true, message: '请输入定时器规则，参考crontab', trigger: 'blur' },
+            ],
+            title: [
+              { required: true, message: '请输入任务中文标题', trigger: 'blur' },
+            ],
+            description:[
+              { required: true, message: '请输入任务描述', trigger: 'blur' },
+            ],
+            timeout: [
+              { required: true, message: '超时设置，默认60S', trigger: 'blur' },
+            ],
+            task_status: [
+              { required: true, type: 'number', message: '请选择任务的状态', trigger: 'blur' },
+            ],
+          }
+        },
+        currentPage: 1,
+        pageSize: 30,
+        url_prefix: url_prefix,
+        taskList: [],
+      }
+    },
+    created: function () {
+      var vm = this;
+      vm.getTaskList()
+    },
+    computed: {
+      showTaskList: function () {
+        var start = (this.currentPage - 1) * this.pageSize;
+        var showTaskList = this.taskList.slice(start, start + this.pageSize)
+        console.log(showTaskList)
+        return showTaskList;
+      }
+    },
+    methods: {
+      handleSizeChange: function (value) {
+        this.pageSize = value;
+      },
+      getTaskStatusTip(row) {
+        var taskStatusMap = ['有效', '无效', '无效(正在杀死当前执行中的任务)','手动调用任务'];
+        var isTaskExec = this.isTaskExec(row);
+        return taskStatusMap[row.task_status]+(isTaskExec?'-任务正在执行中':'');
+      },
+      showTaskDialog(row) {
+        var vm = this;
+        vm.dialog.dialogFormVisible = true;
+        var type;
+        if (!row) {
+          type = 'add';
+          row = {};
+        }
+        vm.dialog.taskInfo = {
+          type: type,
+          task_name: row.task_name,
+          rule: row.rule,
+          rtx_list: row.rtx_list,
+          task_status: row.task_status,
+          title: row.title,
+          description: row.description,
+          timeout: String(row.timeout),
+        };
+      },
+      isTaskExec: function (row) {
+        return moment(row.last_end_time).isBefore(moment(row.last_start_time));
+      },
+      pageSelect: function (selectPath) {
+        location.href = selectPath;
+      },
+      updateTaskInfo(row) {
+        var vm = this;
+        vm.$refs['dialog_taskInfo'].validate((valid) => {
+          if (valid) {
+            vm.getChangeTaskInfo(row);
+          }
+        });
+
+      },
+      timeFormat: function (row, col, cellValue) {
+        if (cellValue) {
+          return moment(cellValue).format('YYYY-MM-DD HH:mm:ss');
+        } else {
+          return '';
+        }
+      },
+      changTaskStatus: function (row, task_status) {
+        var vm = this;
+        var task_status_confirm_map = ['将任务恢复为有效，任务将继续运行', '将任务设置为无效，任务将不再允许，直至恢复有效', '将任务设置为无效，并且杀死当前执行中的进程','是否手动调用执行本任务？'];
+        this.$confirm(task_status_confirm_map[task_status], '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          vm.getChangeTaskInfo({ task_name: row.task_name, task_status: task_status });
+        });
+      },
+      getChangeTaskInfo(row) {
+        var vm = this;
+        axios.post(url_prefix + 'updateTask', row).then(res => {
+          if (res.data.retcode === 0) {
+            vm.$message({
+              type: 'success',
+              message: '请求成功'
+            });
+            vm.getTaskList();
+          } else {
+            vm.$alert(res);
+          }
+        })
+      },
+      getTaskList: function () {
+        var vm = this;
+        axios.get(url_prefix + 'getTaskList').then(res => {
+          var taskList = res.data;
+          vm.taskList = taskList;
+        })
+      }
+    }
+  })
+
+</script>
+
+</html>

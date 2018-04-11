@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="./lib/element-ui.css">
+</head>
+
+<body>
+  <div id="app">
+    <el-menu theme="dark" mode="horizontal" @select="pageSelect" default-active="record.html">
+      <el-menu-item index="">批跑系统</el-menu-item>
+      <el-menu-item index="index.html">任务列表</el-menu-item>
+      <el-menu-item index="record.html">任务执行记录</el-menu-item>
+    </el-menu>
+    <el-card class="box-card">
+      <el-form :model="form" :inline="true">
+        <el-form-item label="时间">
+          <el-date-picker v-model="form['daterange']" type="daterange" placeholder="选择日期时间段" clearable>
+          </el-date-picker>
+        </el-form-item>
+        <el-form-item label="task_name">
+          <el-select filterable v-model="form['task_name']" size="small" clearable>
+            <el-option v-for="item in select_config.task_name" :value="item[0]">{{item[0] + '-执行' + item[1] + '次'}}</el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="退出码">
+          <el-select filterable v-model="form['exit_code']" size="small" clearable>
+            <el-option v-for="item in select_config.exit_code" :value="item[0]">{{item[0] + '-'+item[1]+'次'}}</el-option>
+          </el-select>
+        </el-form-item>
+        </el-switch>
+      </el-form>
+      <div v-if="showTaskList.length">
+        <el-table :data="showTaskList" style="width: 100%" border stripe>
+          <el-table-column prop="task_name" label="任务名">
+          </el-table-column>
+          <el-table-column prop="task_version" label="版本号" width="180">
+          </el-table-column>
+          <el-table-column prop="start_time" label="开始时间" :formatter="timeFormat" width="180">
+          </el-table-column>
+          <el-table-column prop="end_time" label="结束时间" :formatter="timeFormat" width="180">
+          </el-table-column>
+          <el-table-column prop="warning_time" label="告警时间" :formatter="timeFormat" width="180">
+          </el-table-column>
+          <el-table-column prop="exit_code" label="退出码" width="80">
+          </el-table-column>
+          <el-table-column prop="duration" label="耗时/秒" width="100">
+          </el-table-column>
+          <el-table-column label="操作">
+            <template scope="scope">
+              <el-button type='primary' @click="showLog(scope.row, 'logs')" size="small">查看日志</el-button>
+              <el-button type='danger' @click="showLog(scope.row, 'logs_error')" size="small" v-if="scope.row.logs">异常日志</el-button>
+              <el-button @click="showLog(scope.row, 'publish_file_list')" size="small" v-if="scope.row.publish_file_list">文件列表</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-pagination @size-change="handleSizeChange" :current-page.sync="currentPage" :page-sizes="[15, 30, 50, 100]" :page-size.sync="pageSize"
+          layout="total, sizes, prev, pager, next, jumper" :total="taskList.length">
+        </el-pagination>
+      </div>
+    </el-card>
+
+    <el-dialog :title="dialog.title" :visible.sync="dialog.dialogVisible" size="large">
+      <span slot="title" class="dialog-footer" v-if='dialog.type!="publish_file_list"'>
+        <el-button @click="dialog.dialogVisible = false">关 闭</el-button>
+        <a :href="url_prefix+'fileContent?file_path=task/'+dialog.row.task_name + '/logs/' + dialog.row.task_version+'.log'" :download="dialog.row.task_version+'.log'">
+          <el-button type="info">下载本次任务的所有日志</el-button>
+        </a>
+      </span>
+      <el-table :data="dialog.content" stripe fit v-if='dialog.type!="publish_file_list"'>
+        <el-table-column label="日志">
+          <template scope="scope">
+            <code>{{scope.row}}</code>
+
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-table :data="dialog.content" stripe v-if='dialog.type=="publish_file_list"'>
+        <el-table-column label="文件路径">
+          <template scope="scope">
+            <span>{{scope.row}}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作">
+          <template scope="scope">
+            <a :href="url_prefix+'fileContent?file_path='+scope.row" :download="scope.row.split('/').slice(-1)[0]">
+              <el-button type="info">下载</el-button>
+            </a>
+          </template>
+        </el-table-column>
+      </el-table>
+
+    </el-dialog>
+  </div>
+</body>
+<!-- 先引入 Vue -->
+<script src="./lib/vue.min.js"></script>
+<script src="./lib/moment.min.js"></script>
+<script src="./lib/axios.min.js"></script>
+<!-- 引入组件库 -->
+<script src="./lib/element-ui.js"></script>
+<script>
+  var url_prefix = /localhost/.test(location.href) ? 'http://localhost:8017/' : 'http://fmp.oa.com/lct_schedule/';
+  var publishRequestLock = false;
+</script>
+<script>
+  var vueItem = new Vue({
+    el: '#app',
+    data: function () {
+      return {
+        url_prefix: url_prefix,
+        taskList: [],
+        form: {
+          daterange: [
+            moment().subtract(7,'d'),
+            moment(),
+          ],
+          task_name: [],
+        },
+        select_config: {
+          task_name: ['gold', 'rigth_weekly'],
+        },
+        currentPage: 1,
+        pageSize: 30,
+        dialog: {
+          type: 'logs',
+          row: {},
+          dialogVisible: false,
+          content: '',
+          title: "查看任务执行详情"
+        }
+      }
+    },
+    created: function () {
+    },
+    computed: {
+      showTaskList: function () {
+        var start = (this.currentPage - 1) * this.pageSize;
+        return this.taskList.slice(start, start + this.pageSize);
+      }
+    },
+    watch: {
+      form: {
+        handler: function (newForm, oldForm) {
+          this.getTaskList();
+        },
+        deep: true
+      }
+    },
+    methods: {
+      handleSizeChange: function (value) {
+        this.pageSize = value;
+      },
+      getFileContent(file_path, callback) {
+        axios.get(url_prefix + 'fileContent', {
+          params: {
+            file_path: file_path
+          }
+        }).then(res => {
+          callback && callback(res.data);
+        })
+      },
+      showLog: function (row, type, errorLogs) {
+        var vm = this;
+        if (type == 'logs') {
+          var log_file_path = 'task/' + row.task_name + '/logs/' + row.task_version + '.log';
+          vm.getFileContent(log_file_path, function (data) {
+            vm.dialog.dialogVisible = true;
+            vm.dialog.content = data.split('\n');
+            vm.dialog.type = type;
+            vm.dialog.row = row;
+          });
+        } else {
+          if (type == 'logs_error') {
+            vm.dialog.content = row.logs.split('<<<<>>>>');
+          } else {
+            vm.dialog.content = row.publish_file_list.split(',');
+          }
+          vm.dialog.dialogVisible = true;
+          vm.dialog.type = type;
+          vm.dialog.row = row;
+        }
+
+      },
+      pageSelect: function (selectPath) {
+        location.href = selectPath;
+      },
+      timeFormat: function (row, col, cellValue) {
+        if (cellValue) {
+          return moment(cellValue).format('YYYY-MM-DD HH:mm:ss');
+        } else {
+          return '';
+        }
+      },
+      getTaskList: function () {
+        var vm = this;
+        axios.post(url_prefix + 'getTaskExecList', vm.form).then(res => {
+          vm.taskList = res.data.history;
+          vm.select_config = res.data.select_config;
+        })
+      }
+    }
+  })
+
+</script>
+
+</html>
