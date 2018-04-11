@@ -1,0 +1,32 @@
+{
+  "name": "sche_task_monitor",
+  "version": "1.0.0",
+  "description": "定时脚本管理系统",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WilsonLiu95/sche_task_monitor.git"
+  },
+  "keywords": [
+    "定时器、高可靠、易管理"
+  ],
+  "author": "wilsonsliu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/WilsonLiu95/sche_task_monitor/issues"
+  },
+  "homepage": "https://github.com/WilsonLiu95/sche_task_monitor#readme",
+  "dependencies": {
+    "co": "^4.6.0",
+    "cron-parser": "^2.4.3",
+    "fs-extra": "^4.0.2",
+    "moment": "^2.19.2",
+    "mysql": "^2.15.0",
+    "node-dir": "^0.1.17",
+    "node-schedule": "^1.2.5",
+    "promise-mysql": "^3.1.3"
+  }
+}
