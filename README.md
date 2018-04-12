@@ -9,6 +9,7 @@
 ## 如何使用
 ### 引入模块并输入参数
 ```
+npm install --save sche_task_monitor // 安装
 // init.js
 var { run, eventEmitter, app } = require('sche_task_monitor');
 run({
