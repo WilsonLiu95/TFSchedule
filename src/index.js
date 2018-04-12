@@ -24,24 +24,35 @@ var G_pool_client;
 var app = { G_child_process_hanlde_map, G_task_schedule_list, G_task_map };
 // 启动运行
 
-function run({ task_root_path, mysql_config }) {
-  if (!task_root_path || !mysql_config) {
-    throw new Error('请输入mysql_config,task_root_path');
-  }
+function run({ task_root_path, mysql_config,defaultRtx }) {
+  // 首先检查参数是否合理
+  checkRunConfig({ task_root_path, mysql_config,defaultRtx });
 
-  G_pool_client = mysql.createPool(mysql_config);
-  
-  Object.assign(app, { execTask, eventEmitter, G_pool_client, task_root_path, mysql_config });
+  Object.assign(app, { execTask, eventEmitter, G_pool_client, task_root_path, mysql_config,defaultRtx });
   co(function* () {
     bindEvent(app); // 绑定事件
     yield initDb(G_pool_client);
     yield startSystem();
-  
+    throw new Error('请输入mysql_config,task_root_path');
   }).catch(function (e) {
-    eventEmitter.emit('waring', { content: `${e.message} \n ${e.stack}`, title: '批跑系统系统失败' })
+    eventEmitter.emit('waring', { content: `${e.message} \n ${e.stack}`, title: '批跑系统系统启动失败' })
   })
 }
 
+function checkRunConfig({task_root_path, mysql_config,defaultRtx}){
+  if (!task_root_path || !mysql_config) {
+    throw new Error('请输入mysql_config,task_root_path');
+  }
+  try{
+    G_pool_client = mysql.createPool(mysql_config);
+  }catch(e){
+    throw new Error(`连接数据库失败：${e.message}`)
+  }
+  var isExists = fs.existsSync(task_root_path);
+  if(!isExists){
+    throw new Error(`task_root_path根路径不存在${task_root_path}`)
+  }
+}
 // 系统启动函数
 function* startSystem() {
 
