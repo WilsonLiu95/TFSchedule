@@ -3,13 +3,20 @@
 ## 业务背景
 随着node的出现与发展，前端承担了越来越多的职责。
 
-在我们团队的前后端合作中，前端接过了部分批跑脚本的场景。
+前端也有越来越多的场景需要使用批跑脚本
+- 利用爬虫或者接口定时同步数据到DB
+- 线上配置文件、数据文件定时批跑生成并发布到线上
 
-因为切实的影响到线上的业务，因此完成了这套高可靠的批跑脚本管理系统。
+切实的影响到业务，因此需要一套高可靠与及时告警的批跑管理系统。
+
 ## 如何使用
-### 引入模块并输入参数
+1. 安装
 ```
-npm install --save sche_task_monitor // 安装
+npm install --save sche_task_monitor
+```
+
+2.  引入模块并输入参数
+```
 // init.js
 var { run, eventEmitter, app } = require('sche_task_monitor');
 run({
@@ -23,29 +30,38 @@ run({
     task_root_path: '/data/web/schedule/task/', // 任务脚本的根路径
     defaultRtx: 'wilsonsliu' // 告警默认传送对象
 });
-
-// 启动管理系统，在命令行中输入如下指令 管理系统在 8017 端口 打开 127.0.0.1:8017 既可以查看
+// 启动
+node init.js
+```
+3. 启动web管理系统 
+web系统在8017端口打开: http://127.0.0.1:8017
+```
 node  ./node_mudule/sche_task_monitor/webSystem/app.js
+```
+4. 新建任务文件
+
+任务名称为test，此时需要可在`/data/web/schedule/task/`新建一个test目录，并新建`/data/web/schedule/task/test/index.js`;
 
 ```
-### demo新建任务
-在web系统新增任务，例如如下配置 
+var fs = require('fs-extra');
+var path = require('path');
+console.log('测试啦')
+fs.writeFileSync(path.join(__dirname,'publish','a.txt'),'sdsds')
+```
+
+5. web系统新增任务
+在web系统新增任务，例如如下配置
+
 ```
 {
     task_name: 'test',
     rule: '*/30 * * * * *',
-    rtx_list: 'wilsonliuxyz@gmail.com;test@qq.com',
+    rtx_list: 'wilsonliuxyz@gmail.com;test@qq.com', // 告警时的相关责任人
     title: '测试',
     description: '测试描述' 
 }
 ```
-任务名称为test，此时需要可在`/data/web/schedule/task/`新建一个test目录，并新建`/data/web/schedule/task/test/index.js`;
-```
-// index.js
-console.log(11);
-```
-
-此时，批跑管理系统将按照设定的任务规则运行。
+此时，批跑管理系统将按照设定的任务规则运行，每15S进行一次。
 
 ### 事件系统
 模块对外暴露了`eventEmitter`，可以通过监听`task_start,task_end,notify`事件来执行用户相应的代码。
@@ -57,6 +73,7 @@ console.log(11);
   eventEmitter.on('notify', function ({ title, content, task_name,notify_list }) {});
 }
 ```
+
 ### 注意的点
 #### 告警模块需要自己设计
 通过监听`notify`事件来实现自己的告警。用户可以自行选择自己方便的方式，最好能够通过多类方式进行告警。例如微信，邮件，邮箱等等。达到高时效
@@ -83,7 +100,7 @@ task_name唯一，且可以写为`monitor/logline`的方式，则执行路径变
 node本身有丰富的npm模块，`node-schedule`便是一个定时任务模块，有4300+的star。
 你可以像crontab一样，编辑定时的rule，在rule指定的时间，会执行相应的回调函数。
 
-1. crontab的两个问题，通过表t_task_list来进行管理任务，主要录入每个任务的`rule、timeout、last_start_time、last_end_time、last_warning_time`来实现任务的管理
+1. 通过表t_task_list来进行管理任务，主要录入每个任务的`rule、timeout、last_start_time、last_end_time、last_warning_time`来实现任务的管理
 2. 通过批跑系统统一对任务管理与监控，以便对各种任务进行告警
 
 ### 定目标
@@ -194,8 +211,8 @@ src
 4. 小助手4：任务漏执行，告警通知
 5. 小助手5：任务在数据库中被删除告警用户
 
-#### 钩子函数
-hook文件中暴露2个钩子函数startExecTask, endExecTask。
+#### 任务的初始化与结束
+hook.js包含startExecTask, endExecTask两个函数在任务开始结束时运行。
 
 ** startExecTask 执行如下动作 **
 1. 置空任务的发布文件夹 `task/task_name/publish`
