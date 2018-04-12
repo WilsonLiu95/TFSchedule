@@ -1,6 +1,4 @@
-# sche_task_monitor
-
-## 业务背景
+## 背景
 随着node的出现与发展，前端承担了越来越多的职责。
 
 前端也有越来越多的场景需要使用批跑脚本
@@ -9,11 +7,13 @@
 
 切实的影响到业务，因此需要一套高可靠与及时告警的批跑管理系统。
 
+本文将批跑管理的系统封装为一个npm模块，可以方便使用，并且提供一套简单的web管理系统进行管理。
 ## 如何使用
 1. 安装
 ```
-npm install --save sche_task_monitor
+npm install schedule_task_monitor --save
 ```
+gihub链接 https://github.com/WilsonLiu95/schedule_task_monitor
 
 2.  引入模块并输入参数
 ```
@@ -33,7 +33,8 @@ run({
 // 启动
 node init.js
 ```
-3. 启动web管理系统 
+3. 启动web管理系统
+
 web系统在8017端口打开: http://127.0.0.1:8017
 ```
 node  ./node_mudule/sche_task_monitor/webSystem/app.js
@@ -87,6 +88,9 @@ fs.writeFileSync(path.join(__dirname,'publish','a.txt'),'sdsds')
 
 #### task_name设计
 task_name唯一，且可以写为`monitor/logline`的方式，则执行路径变为`monitor/logline/index.js`。即入口文件为拼接的方式可多层级。不建议过深，不方便管理与查看。
+
+#### 非node批跑脚本？
+对于非node的批跑脚本，我们可以在入口文件中对其他脚本再次进行调用的方式进行既可以。
 
 ## 系统设计一览
 ### 定方向
