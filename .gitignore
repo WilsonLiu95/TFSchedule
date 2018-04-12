@@ -1,2 +1,5 @@
 node_modules
-task
+
+example/task/**/publish
+example/task/**/logs
+example/task/**/history

@@ -33,10 +33,10 @@ function run({ task_root_path, mysql_config }) {
   
   Object.assign(app, { execTask, eventEmitter, G_pool_client, task_root_path, mysql_config });
   co(function* () {
+    bindEvent(app); // 绑定事件
     yield initDb(G_pool_client);
     yield startSystem();
-    
-    bindEvent(app); // 绑定事件
+  
   }).catch(function (e) {
     eventEmitter.emit('waring', { content: `${e.message} \n ${e.stack}`, title: '批跑系统系统失败' })
   })
@@ -77,14 +77,14 @@ function* startSystem() {
 
 function bindEvent(app) {
   // 任务开始
-  var { G_pool_client } = app;
+  var { G_pool_client,defaultRtx } = app;
   eventEmitter.on('task_start', function ({ task_name, task_version }) {
     co(function* () {
       yield startExecTask({ task_name, task_version }, app); // 任务开始运行的钩子函数
     });
   });
   // 任务结束
-  eventEmitter.on('task_end', function ({ task_name, exit_code, task_version, error_log_list }, app) {
+  eventEmitter.on('task_end', function ({ task_name, exit_code, task_version, error_log_list }) {
     co(function* () {
       yield endExecTask({ task_name, exit_code, task_version, error_log_list }, app);
     });
@@ -92,7 +92,15 @@ function bindEvent(app) {
   // 监听告警
   eventEmitter.on('waring', function ({ title, content, task_name }) {
     co(function* () {
-      console.log(`waring-${task_name}`, title, content, );
+      var notify_list = defaultRtx;
+      if(task_name){
+        var taskListInfo = yield G_pool_client.query(`select * from t_task_list where task_name="${task_name}"`);
+        if(taskListInfo && taskListInfo[0]){
+          notify_list = taskListInfo[0]['rtx_list'];
+        }
+      }
+      eventEmitter.emit('notify',{title, content, task_name,notify_list});
+      console.log(`waring-${task_name}`, title, content);
       yield G_pool_client.query(`update t_task_list SET last_warning_time='${moment().format('YYYY-MM-DD HH:mm:ss')}' where task_name="${task_name}"`);
     })
   });

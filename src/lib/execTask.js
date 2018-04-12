@@ -39,7 +39,7 @@ function* spawnTask(taskInfo, app) {
 
     const task_version = moment().format('YYYYMM/DD/HHmmss'); // 当前任务的版本号
     const taskExecFilePath = path.join(task_root_path, task_name, 'index.js');
-    const task_log_file = path.join(task_root_path, task_name, `log/${task_version}.log`);
+    const task_log_file = path.join(task_root_path, task_name, `logs/${task_version}.log`);
 
     // 检验任务入口文件是否存在，不存在则返回
     if (!checkExecFileExists(taskInfo, taskExecFilePath, app)) return false;

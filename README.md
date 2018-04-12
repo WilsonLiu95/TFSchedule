@@ -6,6 +6,67 @@
 在我们团队的前后端合作中，前端接过了部分批跑脚本的场景。
 
 因为切实的影响到线上的业务，因此完成了这套高可靠的批跑脚本管理系统。
+## 如何使用
+### 引入模块并输入参数
+```
+// init.js
+var { run, eventEmitter, app } = require('sche_task_monitor');
+run({
+    mysql_config: { // mysql连接配置
+        host: 'localhost',
+        port: '3306',
+        user: 'root',
+        password: '1234',
+        database: 'db_lct_schedule', // 请先建立该数据库
+    },
+    task_root_path: '/data/web/schedule/task/', // 任务脚本的根路径
+    defaultRtx: 'wilsonsliu' // 告警默认传送对象
+});
+
+// 启动管理系统，在命令行中输入如下指令 管理系统在 8017 端口 打开 127.0.0.1:8017 既可以查看
+node  ./node_mudule/sche_task_monitor/webSystem/app.js
+
+```
+### demo新建任务
+在web系统新增任务，例如如下配置 
+```
+{
+    task_name: 'test',
+    rule: '*/30 * * * * *',
+    rtx_list: 'wilsonliuxyz@gmail.com;test@qq.com',
+    title: '测试',
+    description: '测试描述' 
+}
+```
+任务名称为test，此时需要可在`/data/web/schedule/task/`新建一个test目录，并新建`/data/web/schedule/task/test/index.js`;
+```
+// index.js
+console.log(11);
+```
+
+此时，批跑管理系统将按照设定的任务规则运行。
+
+### 事件系统
+模块对外暴露了`eventEmitter`，可以通过监听`task_start,task_end,notify`事件来执行用户相应的代码。
+```
+  eventEmitter.on('task_start', function ({ task_name, task_version }) {});
+  // 任务结束
+  eventEmitter.on('task_end', function ({ task_name, exit_code, task_version, error_log_list }) {});
+  // 监听告警
+  eventEmitter.on('notify', function ({ title, content, task_name,notify_list }) {});
+}
+```
+### 注意的点
+#### 告警模块需要自己设计
+通过监听`notify`事件来实现自己的告警。用户可以自行选择自己方便的方式，最好能够通过多类方式进行告警。例如微信，邮件，邮箱等等。达到高时效
+
+`notify`如果没有`task_name`,那么`notify_list`，则使用初始化传入的`defaultRtx`进行。
+
+#### 任务退出码 exit_code
+任务正常退出 批跑模块 会接受到 `exit_code` 为0，因为异常退出会接收到 1。当退出码为非0值时，将触发告警。用户可以通过`process.exit(101)`，来触发告警
+
+#### task_name设计
+task_name唯一，且可以写为`monitor/logline`的方式，则执行路径变为`monitor/logline/index.js`。即入口文件为拼接的方式可多层级。不建议过深，不方便管理与查看。
 
 ## 系统设计一览
 ### 定方向
@@ -42,26 +103,27 @@ task的入口脚本统一放在task目录进行管理，而每个任务的关键
 以下示例中`task_name`为gold，则批跑系统去数据库中找到`task_name=gold`这一条记录并按照，对应的`rule`进行挂在定时器，`gold/index.js`则为对应的任务入口文件，系统通过`node task/gold/index.js`执行特定任务。
 
 ```
-.
-├── config
-│   ├── config.js // 配置入口
-│   ├── default.config.js // 默认的一些配置
-│   ├── development.config.js // 开发环境配置
-│   └── production.config.js // 正式环境配置
-├── task // 所有任务的根目录
+
+src
+├── index.js // 入口文件
+├── lib
+│   ├── execTask.js // 执行具体某个任务的代码
+│   ├── hook.js // 开始与结束任务的钩子函数
+│   ├── initDB.js // 初始化DB
+│   └── monitorHelper.js // 5个监控小助手
+├── webSystem // GUI的批跑管理系统
+├── task // 指定该目录为任务根目录
 |   └── gold // 具体某一个定时任务
 |         └── index.js // 某一个任务的入口文件
 |         └—— logs // 本任务留下的日志文件
+│              └── 201711 // 某个月
+│                  ├── 23_213854.log // 按照 day_HHmmss构建目录存放历史版本
 |         └—— publish // 每次任务发布的文件夹，发布到线上需要手动调用发布函数，任务退出后批跑系统会自动将本目录下的文件备份到history目录
 |         └—— history // 目录下文件按照 gold_profit.201711231015.json 即 name + time(精确到分钟) + 尾缀的形式保存
 │              └── 201711 // 某一月份的历史发布文件
 │                  ├── 23_213854 // 按照 day_HHmmss构建目录存放历史版本
 │                  │   ├── currentYearPrice.json
-├── webSystem // GUI的批跑管理系统
-├── helper.js // 提供2个方法(caePublish, notifyTaskRTX)并引入config/config.js进行暴露，
-├── hook.js // 每次任务运行的 开始与结束的两个钩子函数
-├── index.js // 项目启动文件
-├── monitorHelper.js // 6个监控小助手
+
 ```
 ## web管理端展示
 ![任务管理(新建、修改、切换任务状态)](./docs/img/1513427851_7_w3808_h1678.jpg)
@@ -109,13 +171,13 @@ task的入口脚本统一放在task目录进行管理，而每个任务的关键
 1. 任务执行超时告警(`t_task_list`表中每个任务可指定超时时间为多少秒`timeout`)
 2. `exit_code`非0，即异常退出
 3. 漏执行告警(`cron-parser`解析`rule`得到上次应该运行时间，通过与任务的`last_start_time`比较确定是否漏执行)
-4. 数据库中任务被删除通知(通过将目前挂载的任务`G_task_schedule_list`与数据库中任务进行比对，发现是否有任务呗删除)
-5. task内用户主动调用`notifyTaskRTX`方法进行自定义告警
+4. 数据库中任务被删除通知(通过将目前挂载的任务`G_task_schedule_list`与数据库中任务进行比对，发现是否有任务被删除)
+5. 批跑模块内部异常
 
 #### 日志输出
 父进程通过监听子进程的`stdout,stderr`两个输出流，得到子进程的日志输出。
 
-日志将会存放在`task/logs/YYYYMM/DD/HHmmss.log`目录下，按照任务执行的时间存放，同时将`stderr`的信息入库(为保护批跑系统，做限制，只录入前200条)，用以在UI界面展示与告警时输出。用户如果需要详细的日志还是需要查阅日志文件。
+日志将会存放在`task/logs/YYYYMM/DD/HHmmss.log`目录下，按照任务执行的时间存放，同时将`stderr`的信息入库(为保护批跑系统，做限制，只录入前100条)，用以在UI界面展示与告警时输出。用户如果需要详细的日志还是需要查阅日志文件。
 
 `stderr`可以通过`console.error`输出，另外如果进程异常退出也会输出到stderr，建议在catch住异常后通过`console.error`进行输出。
 
@@ -144,12 +206,6 @@ hook文件中暴露2个钩子函数startExecTask, endExecTask。
 2. **版本备份** ：备份本次执行的发布文件夹`task/task_name/publish`到`task/task_name/history/task_version`
 3. 更新任务运行记录(包括录入logs、发布的文件路径数组)
 
-#### helper.js
-为了使得任务中更方便的引用，`helper`中已引入`config.js`并进行暴露，同时，也暴露出task相关的配置信息，以便任务中不需要写死发布文件夹等信息。
-
-`helper`中主要暴露2个`promise`类型方法，一个是`notifyTaskRTX`，用于给用户发送微信,RTX与邮件通知。
-
-另外一个是`caePublish`函数,参数为`typeList: ['pre', 'prod']`，即传入需要发布的模块类型；默认会将`task/task_name/publish/`目录下的内容发布到线上的`/resources/autostatic/task_name/`目录(支持文件夹与文件)。
 ## 小结
 批跑系统作为一个基础设施与其他系统最大的不同在于需要高稳定性且需要准确的监控告警以避免任务出现各种情况导致线上问题，却后知后觉。
 

@@ -1,4 +1,4 @@
-var { run } = require('./src/index')
+var { run } = require('../src/index')
 run({
     mysql_config: {
         host: 'localhost',
@@ -7,5 +7,6 @@ run({
         password: '1234',
         database: 'db_lct_schedule',
     },
-    task_root_path: './task'
+    task_root_path: __dirname+ '/task',
+    defaultRtx: 'wilsonsliuxyz@gmail.com'
 })
