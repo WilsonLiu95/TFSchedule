@@ -79,6 +79,8 @@ fs.writeFileSync(path.join(__dirname,'publish','a.txt'),'sdsds')
 通过监听`notify`事件来实现自己的告警。用户可以自行选择自己方便的方式，最好能够通过多类方式进行告警。例如微信，邮件，邮箱等等。达到高时效
 
 `notify`如果没有`task_name`,那么`notify_list`，则使用初始化传入的`defaultRtx`进行。
+#### 发布批跑生成的文件
+对于任务中生成的文件，规范放在对应的任务publish目录。实现自己的发布函数，在任务中进行调用。
 
 #### 任务退出码 exit_code
 任务正常退出 批跑模块 会接受到 `exit_code` 为0，因为异常退出会接收到 1。当退出码为非0值时，将触发告警。用户可以通过`process.exit(101)`，来触发告警
