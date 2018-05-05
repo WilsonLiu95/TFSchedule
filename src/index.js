@@ -33,7 +33,6 @@ function run({ task_root_path, mysql_config,defaultRtx,isAutoChangeEnv }) {
     bindEvent(app); // 绑定事件
     yield initDb(G_pool_client);
     yield startSystem();
-    throw new Error('请输入mysql_config,task_root_path');
   }).catch(function (e) {
     eventEmitter.emit('waring', { content: `${e.message} \n ${e.stack}`, title: '批跑系统系统启动失败' })
   })
