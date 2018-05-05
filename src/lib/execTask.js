@@ -46,8 +46,12 @@ function* spawnTask(taskInfo, app) {
 
     // 调用 任务开始运行的钩子函数
     eventEmitter.emit('task_start', { task_name, task_version }, app);
-
-    G_child_process_hanlde_map[task_name] = spawn('node', [taskExecFilePath]);
+    var execBin = 'node';
+    // NODE_ENV=production 是否根据部署环境的不同切换环境，默认自动切换
+    if(!app.disableAutoChangeEnv && process.env.NODE_ENV){
+        execBin = `NODE_ENV=${process.env.NODE_ENV} ${execBin}`;
+    }
+    G_child_process_hanlde_map[task_name] = spawn(execBin, [taskExecFilePath]);
 
     const task_pid = `(pid:${G_child_process_hanlde_map[task_name].pid})`;
 

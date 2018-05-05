@@ -24,11 +24,11 @@ var G_pool_client;
 var app = { G_child_process_hanlde_map, G_task_schedule_list, G_task_map };
 // 启动运行
 
-function run({ task_root_path, mysql_config,defaultRtx }) {
+function run({ task_root_path, mysql_config,defaultRtx,isAutoChangeEnv }) {
   // 首先检查参数是否合理
   checkRunConfig({ task_root_path, mysql_config,defaultRtx });
-
-  Object.assign(app, { execTask, eventEmitter, G_pool_client, task_root_path, mysql_config,defaultRtx });
+  isAutoChangeEnv = isAutoChangeEnv || true; // 默认自动切换调用node时的运行环境
+  Object.assign(app, { execTask, eventEmitter, G_pool_client, task_root_path, mysql_config,defaultRtx,isAutoChangeEnv });
   co(function* () {
     bindEvent(app); // 绑定事件
     yield initDb(G_pool_client);
