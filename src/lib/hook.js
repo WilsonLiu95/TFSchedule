@@ -56,9 +56,8 @@ function* updateTaskExec({ task_name, exit_code, task_version, now_time_str, err
     var publish_file_list = [];
     const absolute_path_list = yield dir.promiseFiles(task_publish_dir);
     absolute_path_list.map(filePath => { // 将绝对路径转化为相对路径
-        var relative_path = path.relative(task_root_path, filePath);
-        publish_file_list.push(relative_path);
-
+        var fileName = path.relative(task_publish_dir, filePath);
+        publish_file_list.push(path.join(task_name,'history',task_version,fileName));
     });
 
     const duration = moment(last_end_time).diff(moment(last_start_time), 'seconds');

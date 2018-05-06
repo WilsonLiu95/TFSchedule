@@ -1,5 +1,8 @@
+require("babel-polyfill");
+
 const path = require('path');
 const fs = require('fs');
+const tof = require('@tencent/easy_tof');
 const moment = require('moment');
 const mysql = require('promise-mysql');
 
@@ -17,14 +20,14 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
 app.use(morgan('dev'));
-const task_root_path = path.join(__dirname, '..');
+const task_root_path = path.join(__dirname, '..','task');
 
 if (process.env.NODE_ENV == 'production') {
   var lct_schedule = {
-    host: 'localhost',
-    port: '3306',
-    user: 'root',
-    password: '1234',
+    host: '10.209.17.111',
+    port: '3308',
+    user: 'lct_db_qry',
+    password: 'lct_db_qry',
     database: 'db_lct_schedule',
   };
 } else {
@@ -39,11 +42,27 @@ if (process.env.NODE_ENV == 'production') {
 const poolClient = mysql.createPool(lct_schedule);
 
 if (process.env.NODE_ENV == 'production') {
-  // 线上登录鉴权
+  app.use(tof({
+    appKey: '20b28ad8087f4905aa18f025a300d0f6', // 必填
+    sysId: 24859, // 必填
+    tidy: true, // 默认false，选填，去掉鉴权后url返回的ticket、loginParam等参数，保持url的整洁
+    baseUrl: 'http://fmp.oa.com/lct_schedule', // 选填，基础地址，当你项目的域名是挂在主域名下的pathname下的时候，设置这个避免很多问题
+    backUrl: 'http://fmp.oa.com/lct_schedule', // 选填，鉴权后返回的地址
+    idc: true // 默认false，选填，当你项目在idc环境时，设置为true 
+  }));
 } else {
   var MOCK_USER = {
+    Key: 'eRS7hq56C3',
+    Expiration: '2017-05-15T11:21:00.9345434',
+    IsPersistent: false,
+    IssueDate: '2017-05-08T11:21:00.9345434',
+    StaffId: 87057,
     LoginName: 'wilsonsliu',
     ChineseName: '刘盛',
+    DeptId: 18427,
+    DeptName: '理财平台产品部',
+    Version: 1,
+    Token: 'z9Tf+OAFreDs80wOXdAn57hvpaGHhP5vwf6mVqAWFqw='
   };
   app.use(function (req, res, next) {
     if (!res.locals) res.locals = {}
