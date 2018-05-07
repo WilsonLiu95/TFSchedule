@@ -133,6 +133,7 @@ task的入口脚本统一放在task目录进行管理，而每个任务的关键
 src
 ├── index.js // 入口文件
 ├── lib
+│   ├── clearTaskExecRecord.js // 清除过期的日志与任务执行记录
 │   ├── execTask.js // 执行具体某个任务的代码
 │   ├── hook.js // 开始与结束任务的钩子函数
 │   ├── initDB.js // 初始化DB
