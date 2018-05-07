@@ -28,7 +28,9 @@ run({
         database: 'db_lct_schedule', // 请先建立该数据库
     },
     task_root_path: '/data/web/schedule/task/', // 任务脚本的根路径
-    defaultRtx: 'wilsonsliu' // 告警默认传送对象
+    defaultRtx: 'wilsonsliu', // 告警默认传送对象
+    isAutoChangeEnv: true, // 默认调用spawn运行任务时继承批跑系统的process.env。主要是为了继承 NODE_ENV=production node环境，以便进行相应的操作
+    backExecRecordNum: 30, // 默认保存30天的任务执行记录，任务执行记录包括日志文件，发布文件的备份，执行记录的备份(存储在数据库中)
 });
 // 启动
 node init.js
@@ -216,6 +218,8 @@ src
 3. 小助手3：根据数据库中的timeout字段，进行超时提醒
 4. 小助手4：任务漏执行，告警通知
 5. 小助手5：任务在数据库中被删除告警用户
+
+另外挂载了一个每日凌晨3点运行的清理小助手，用于清除日志文件及数据库中的执行记录。
 
 #### 任务的初始化与结束
 hook.js包含startExecTask, endExecTask两个函数在任务开始结束时运行。

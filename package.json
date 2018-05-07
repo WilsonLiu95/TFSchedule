@@ -1,6 +1,6 @@
 {
   "name": "schedule_task_monitor",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "定时脚本管理系统",
   "main": "src/index.js",
   "scripts": {

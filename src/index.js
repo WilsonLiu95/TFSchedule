@@ -14,8 +14,9 @@ const co = require('co');
 
 const { startExecTask, endExecTask } = require('./lib/hook');
 const { monitorHelper } = require('./lib/monitorHelper');
-const {initDb} = require('./lib/initDb');
+const { initDb } = require('./lib/initDb');
 const { execTask } = require('./lib/execTask');
+const { clearTaskExecRecord } = require('./lib/clearTaskExecRecord');
 
 var G_child_process_hanlde_map = {}; // 存储子进程list，超时进行kill
 var G_task_schedule_list = {};// 存储任务列表，rule刷新进行cancel，并重新挂载 
@@ -24,11 +25,11 @@ var G_pool_client;
 var app = { G_child_process_hanlde_map, G_task_schedule_list, G_task_map };
 // 启动运行
 
-function run({ task_root_path, mysql_config,defaultRtx,isAutoChangeEnv }) {
+function run({ task_root_path, mysql_config, defaultRtx, isAutoChangeEnv, backExecRecordNum }) {
   // 首先检查参数是否合理
-  checkRunConfig({ task_root_path, mysql_config,defaultRtx });
+  checkRunConfig({ task_root_path, mysql_config, defaultRtx });
   isAutoChangeEnv = isAutoChangeEnv || true; // 默认自动切换调用node时的运行环境
-  Object.assign(app, { execTask, eventEmitter, G_pool_client, task_root_path, mysql_config,defaultRtx,isAutoChangeEnv });
+  Object.assign(app, { execTask, eventEmitter, G_pool_client, task_root_path, mysql_config, defaultRtx, isAutoChangeEnv, backExecRecordNum });
   co(function* () {
     bindEvent(app); // 绑定事件
     yield initDb(G_pool_client);
@@ -38,17 +39,17 @@ function run({ task_root_path, mysql_config,defaultRtx,isAutoChangeEnv }) {
   })
 }
 
-function checkRunConfig({task_root_path, mysql_config,defaultRtx}){
+function checkRunConfig({ task_root_path, mysql_config, defaultRtx }) {
   if (!task_root_path || !mysql_config) {
     throw new Error('请输入mysql_config,task_root_path');
   }
-  try{
+  try {
     G_pool_client = mysql.createPool(mysql_config);
-  }catch(e){
+  } catch (e) {
     throw new Error(`连接数据库失败：${e.message}`)
   }
   var isExists = fs.existsSync(task_root_path);
-  if(!isExists){
+  if (!isExists) {
     throw new Error(`task_root_path根路径不存在${task_root_path}`)
   }
 }
@@ -83,11 +84,21 @@ function* startSystem() {
     });
   });
 
+  // 4. 绑定清理小助手
+  console.log('========绑定清理小助手，每天3点为您清理过期的数据=============');
+  schedule.scheduleJob('0 0 3 * * *', function () {
+    var {task_root_path, backExecRecordNum, G_pool_client} = app;
+    co(function*(){
+      yield clearTaskExecRecord(task_root_path, backExecRecordNum, G_pool_client);
+    })
+
+  });
+
 }
 
 function bindEvent(app) {
   // 任务开始
-  var { G_pool_client,defaultRtx } = app;
+  var { G_pool_client, defaultRtx } = app;
   eventEmitter.on('task_start', function ({ task_name, task_version }) {
     co(function* () {
       yield startExecTask({ task_name, task_version }, app); // 任务开始运行的钩子函数
@@ -103,13 +114,13 @@ function bindEvent(app) {
   eventEmitter.on('waring', function ({ title, content, task_name }) {
     co(function* () {
       var notify_list = defaultRtx;
-      if(task_name){
+      if (task_name) {
         var taskListInfo = yield G_pool_client.query(`select * from t_task_list where task_name="${task_name}"`);
-        if(taskListInfo && taskListInfo[0]){
+        if (taskListInfo && taskListInfo[0]) {
           notify_list = taskListInfo[0]['rtx_list'];
         }
       }
-      eventEmitter.emit('notify',{title, content, task_name,notify_list});
+      eventEmitter.emit('notify', { title, content, task_name, notify_list });
       console.log(`waring-${task_name}`, title, content);
       yield G_pool_client.query(`update t_task_list SET last_warning_time='${moment().format('YYYY-MM-DD HH:mm:ss')}' where task_name="${task_name}"`);
     })
