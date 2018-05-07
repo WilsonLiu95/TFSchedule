@@ -9,6 +9,8 @@
 
 本文将批跑管理的系统封装为一个npm模块，可以方便使用，并且提供一套简单的web管理系统进行管理。
 ## 如何使用
+可直接参见 example 目录下的例子
+
 1. 安装
 ```
 npm install schedule_task_monitor --save
@@ -17,8 +19,7 @@ gihub链接 https://github.com/WilsonLiu95/schedule_task_monitor
 
 2.  引入模块并输入参数
 ```
-// init.js
-var { run, eventEmitter, app } = require('sche_task_monitor');
+var { run, eventEmitter, app } = require('schedule_task_monitor');
 run({
     mysql_config: { // mysql连接配置
         host: 'localhost',
@@ -36,14 +37,43 @@ run({
 node init.js
 ```
 3. 启动web管理系统
-
 web系统在8017端口打开: http://127.0.0.1:8017
 ```
-node  ./node_mudule/sche_task_monitor/webSystem/app.js
+// initweb.js
+var { runWeb,webApp } = require('schedule_task_monitor');
+
+runWeb({
+    mysql_config: {
+        host: 'localhost',
+        port: '3306',
+        user: 'root',
+        password: '1234',
+        database: 'db_lct_schedule',
+    },
+    task_root_path: __dirname+ '/task',
+    port: 8017,
+    oauthLogin: function(){
+        if (process.env.NODE_ENV == 'production') {
+            // 待用户自己编写自己的授权代码
+          } else {
+            var MOCK_USER = {
+              LoginName: 'wilsonsliu',
+              ChineseName: '刘盛',
+            };
+            webApp.use(function (req, res, next) {
+              if (!res.locals) res.locals = {}
+              res.locals.userInfo = MOCK_USER;
+              next();
+            });
+          }
+    }
+})
+// 启动web系统
+node initweb.js
 ```
 4. 新建任务文件
 
-任务名称为test，此时需要可在`/data/web/schedule/task/`新建一个test目录，并新建`/data/web/schedule/task/test/index.js`;
+任务名称为test，此时需要可在`task_root_path`新建一个test目录，并在test目录下新建一份执行文件`/index.js`;
 
 ```
 var fs = require('fs-extra');
@@ -132,13 +162,17 @@ task的入口脚本统一放在task目录进行管理，而每个任务的关键
 
 src
 ├── index.js // 入口文件
+├── webapp.js // web系统入口，在index.js引入，并暴露
 ├── lib
 │   ├── clearTaskExecRecord.js // 清除过期的日志与任务执行记录
 │   ├── execTask.js // 执行具体某个任务的代码
 │   ├── hook.js // 开始与结束任务的钩子函数
 │   ├── initDB.js // 初始化DB
 │   └── monitorHelper.js // 5个监控小助手
-├── webSystem // GUI的批跑管理系统
+├── public // web系统的文件
+│   ├── lib // 一些前端基础库
+│   ├── index.html // 首页
+│   ├── record.html // 记录页面
 ├── task // 指定该目录为任务根目录
 |   └── gold // 具体某一个定时任务
 |         └── index.js // 某一个任务的入口文件
@@ -158,6 +192,7 @@ src
 ![异常日志查看与日志下载](./docs/img/1513426639_74_w3734_h2200.jpg)
 ![历史版本文件查看](./docs/img/1513426656_81_w3830_h1614.jpg)
 
+部署到线上时建议通过ningx或者apapche配置反向代理，将某个前缀路径配置到本系统的端口。
 ## 系统特性的介绍与原理简介
 ### 高稳定性
 1. 模块化、简单化。通过批跑系统模块化，并保证每个模块代码精简与健壮，以此来提高批跑系统的稳定性。

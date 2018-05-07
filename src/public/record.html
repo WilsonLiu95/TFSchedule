@@ -105,8 +105,7 @@
 <!-- 引入组件库 -->
 <script src="./lib/element-ui.js"></script>
 <script>
-  var url_prefix = /localhost/.test(location.href) ? 'http://localhost:8017/' : 'http://fmp.oa.com/lct_schedule/';
-  var publishRequestLock = false;
+  var url_prefix = location.pathname.replace('record.html','');
 </script>
 <script>
   var vueItem = new Vue({

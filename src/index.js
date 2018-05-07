@@ -18,6 +18,9 @@ const { initDb } = require('./lib/initDb');
 const { execTask } = require('./lib/execTask');
 const { clearTaskExecRecord } = require('./lib/clearTaskExecRecord');
 
+// web应用程序
+const {webApp,runWeb} = require('./webapp');
+
 var G_child_process_hanlde_map = {}; // 存储子进程list，超时进行kill
 var G_task_schedule_list = {};// 存储任务列表，rule刷新进行cancel，并重新挂载 
 var G_task_map = {};// key为task_name,value为定时规则
@@ -127,5 +130,5 @@ function bindEvent(app) {
   });
 }
 module.exports = {
-  run, eventEmitter, app
+  run, eventEmitter, app,webApp,runWeb
 }

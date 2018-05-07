@@ -107,8 +107,8 @@
     }
     return obj;
   }
-  var url_prefix = /localhost/.test(location.href) ? '/' : '/lct_schedule/';
-  var publishRequestLock = false;
+  
+  var url_prefix = location.pathname.replace('index.html','');
 </script>
 <script>
   var vueItem = new Vue({
