@@ -26,7 +26,7 @@ run({
         port: '3306',
         user: 'root',
         password: '1234',
-        database: 'db_lct_schedule', // 请先建立该数据库
+        database: 'db_schedule', // 请先建立该数据库
     },
     task_root_path: '/data/web/schedule/task/', // 任务脚本的根路径
     defaultRtx: 'wilsonsliu', // 告警默认传送对象
@@ -48,7 +48,7 @@ runWeb({
         port: '3306',
         user: 'root',
         password: '1234',
-        database: 'db_lct_schedule',
+        database: 'db_schedule',
     },
     task_root_path: __dirname+ '/task',
     port: 8017,

@@ -5,7 +5,7 @@ run({
         port: '3306',
         user: 'root',
         password: '1234',
-        database: 'db_lct_schedule',
+        database: 'db_schedule',
     },
     task_root_path: __dirname+ '/task',
     defaultRtx: 'wilsonsliuxyz@gmail.com'

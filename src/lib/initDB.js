@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS t_task_list (
 
 var sqlStr2 = 
 `
-CREATE TABLE IF NOT EXISTS db_lct_schedule.t_task_exec_list (
+CREATE TABLE IF NOT EXISTS t_task_exec_list (
   id int(11) NOT NULL AUTO_INCREMENT,
   task_name varchar(64) NOT NULL COMMENT '任务命名，也是任务id，需要与文件夹目录一致',
   task_version varchar(64) DEFAULT NULL COMMENT '本次执行的版本号',
