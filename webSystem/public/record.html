@@ -65,7 +65,7 @@
     <el-dialog :title="dialog.title" :visible.sync="dialog.dialogVisible" size="large">
       <span slot="title" class="dialog-footer" v-if='dialog.type!="publish_file_list"'>
         <el-button @click="dialog.dialogVisible = false">关 闭</el-button>
-        <a :href="url_prefix+'fileContent?file_path=task/'+dialog.row.task_name + '/logs/' + dialog.row.task_version+'.log'" :download="dialog.row.task_version+'.log'">
+        <a :href="url_prefix+'fileContent?file_path='+dialog.row.task_name + '/logs/' + dialog.row.task_version+'.log'" :download="dialog.row.task_version+'.log'">
           <el-button type="info">下载本次任务的所有日志</el-button>
         </a>
       </span>
