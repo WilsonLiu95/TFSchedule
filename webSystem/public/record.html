@@ -51,6 +51,9 @@
           <el-table-column label="操作">
             <template scope="scope">
               <el-button type='primary' @click="showLog(scope.row, 'logs')" size="small">查看日志</el-button>
+              <a :href="url_prefix+'fileContent?file_path='+scope.row.task_name + '/logs/' + scope.row.task_version+'.log'" :download="scope.row.task_version+'.log'">
+                <el-button size="small" type="info">下载日志</el-button>
+              </a>
               <el-button type='danger' @click="showLog(scope.row, 'logs_error')" size="small" v-if="scope.row.logs">异常日志</el-button>
               <el-button @click="showLog(scope.row, 'publish_file_list')" size="small" v-if="scope.row.publish_file_list">文件列表</el-button>
             </template>
@@ -114,13 +117,15 @@
         taskList: [],
         form: {
           daterange: [
-            moment().subtract(7,'d'),
+            moment().subtract(3,'d'),
             moment(),
           ],
           task_name: [],
         },
         select_config: {
-          task_name: ['gold', 'rigth_weekly'],
+          task_name: [],
+          exit_code: [],
+          isHasData: false
         },
         currentPage: 1,
         pageSize: 30,
@@ -165,7 +170,7 @@
       showLog: function (row, type, errorLogs) {
         var vm = this;
         if (type == 'logs') {
-          var log_file_path = 'task/' + row.task_name + '/logs/' + row.task_version + '.log';
+          var log_file_path = row.task_name + '/logs/' + row.task_version + '.log';
           vm.getFileContent(log_file_path, function (data) {
             vm.dialog.dialogVisible = true;
             vm.dialog.content = data.split('\n');
@@ -198,7 +203,12 @@
         var vm = this;
         axios.post(url_prefix + 'getTaskExecList', vm.form).then(res => {
           vm.taskList = res.data.history;
-          vm.select_config = res.data.select_config;
+          if(!vm.select_config.isHasData){
+            vm.select_config.isHasData = true;
+            vm.select_config.exit_code = res.data.select_config.exit_code;
+            vm.select_config.task_name = res.data.select_config.task_name;
+
+          }
         })
       }
     }
