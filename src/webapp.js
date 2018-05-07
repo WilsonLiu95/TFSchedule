@@ -8,7 +8,7 @@ const wrap = require('co-express');
 const morgan = require('morgan')
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-
+var src_path = __dirname;
 const co = require('co');
 /*
     参数设置 
@@ -39,7 +39,7 @@ function runWeb(config) {
     poolClient = mysql.createPool(mysql_config);
     // 调用授权登录函数
     oauthLogin && oauthLogin();
-    webApp.use(express.static(path.join(__dirname, 'public'), {
+    webApp.use(express.static(path.join(src_path, 'public'), {
         maxage: 86400000
     }));
 
