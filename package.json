@@ -1,6 +1,6 @@
 {
-  "name": "schedule_task_monitor",
-  "version": "1.2.0",
+  "name": "tfschedule",
+  "version": "1.0.0",
   "description": "定时脚本管理系统",
   "main": "src/index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WilsonLiu95/schedule_task_monitor.git"
+    "url": "git+https://github.com/WilsonLiu95/TFSchedule.git"
   },
   "keywords": [
     "定时器、高可靠、易管理"
@@ -16,9 +16,9 @@
   "author": "wilsonsliu",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/WilsonLiu95/sche_task_monitor/issues"
+    "url": "https://github.com/WilsonLiu95/TFSchedule/issues"
   },
-  "homepage": "https://github.com/WilsonLiu95/sche_task_monitor#readme",
+  "homepage": "https://github.com/WilsonLiu95/TFSchedule#readme",
   "dependencies": {
     "co": "^4.6.0",
     "cron-parser": "^2.4.3",

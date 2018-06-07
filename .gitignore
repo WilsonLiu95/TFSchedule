@@ -3,3 +3,4 @@ node_modules
 example/task/**/publish
 example/task/**/logs
 example/task/**/history
+.vscode
