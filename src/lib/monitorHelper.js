@@ -140,8 +140,8 @@ function* checkIsRunTaskAgain({ taskName, taskStatus }) {
     var { mysqlClient } = this;
     if (taskStatus === 3) {
         console.log(`(${taskName})-小助手6 手动调用任务`);
-        this.emit('runTask', taskName);
         yield mysqlClient.query(`update t_task_list set taskStatus=0 where taskName='${taskName}'`);
+        this.emit('runTask', taskName);
     }
 }
 // 小助手3S运行一次，进行监控
