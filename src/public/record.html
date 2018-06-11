@@ -54,7 +54,7 @@
                             <a :href="url_prefix+'fileContent?filePath='+scope.row.taskName + '/logs/' + scope.row.taskVersion+'.log'" :download="scope.row.taskVersion+'.log'">
                                 <el-button size="small" type="info">下载日志</el-button>
                             </a>
-                            <el-button type='danger' @click="showLog(scope.row, 'logs_error')" size="small" v-if="scope.row.logs">异常日志</el-button>
+                            <el-button type='danger' @click="showLog(scope.row, 'logs_error')" size="small" v-if="scope.row.errorLogs">异常日志</el-button>
                             <el-button @click="showLog(scope.row, 'publishFileList')" size="small" v-if="scope.row.publishFileList">文件列表</el-button>
                         </template>
                     </el-table-column>
@@ -176,7 +176,7 @@
                     });
                 } else {
                     if (type == 'logs_error') {
-                        vm.dialog.content = row.logs.split('<<<<>>>>');
+                        vm.dialog.content = row.errorLogs.split('<<<<>>>>');
                     } else {
                         vm.dialog.content = row.publishFileList.split(',');
                     }
