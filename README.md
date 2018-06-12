@@ -52,7 +52,7 @@ npm install tfschedule --save
     node example/init.js
 ```
 3. 启动web管理系统
-web系统在8017端口打开: http://127.0.0.1:8017 推荐批跑与web系统分开启动，以避免互相影响。
+web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分开启动，以避免互相影响。
 部署到线上时建议通过ningx或者apapche配置反向代理，将某个前缀路径配置到本系统的端口。
 
 ```javascript
