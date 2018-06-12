@@ -132,10 +132,11 @@ web系统在8017端口打开: http://127.0.0.1:8017。 推荐批跑与web系统
 在此之上，如果想手动执行退出，可调用`process.exit(exitCode)`,建议通过自定义退出码达到更多的传送信息的目的。
 目前建议使用100以上的退出码，0与1为node进程规范使用，2-100为TFSchedule预留的异常码。
 
-`singnalCode`为 `process.kill(signalCode)`传入，web系统下手动杀死执行中的任务即是调用这个方法进行杀死。
+`singnalCode`为 `process.kill(signalCode)`传入，web系统下手动杀死执行中的任务即是调用这个方法进行杀死，手动杀死的异常码设置为2。
 
 `TFSchedule`监听到非0的退出码会触发异常退出 `closeError` 告警，如果接收到`signalCode`会触发`killTask`敏感操作告警。
 
+另外，存在`exitCode`为null的情况，即当任务尚在执行 or 任务进行中时遇到TFSchedule重启导致不再更新任务执行数据。
 **任务运行完，请及时退出**
 1. 避免类似`express`一样起一个服务导致不退出
 2. 避免mysql连接未退出造成任务不退出

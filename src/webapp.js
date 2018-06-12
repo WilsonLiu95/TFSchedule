@@ -64,7 +64,15 @@ function bindCgi() {
             whereList.push(`startTime<="${moment(daterange[1]).format('YYYY-MM-DD HH:mm:ss')}"`);
         }
         taskName && whereList.push(`taskName='${taskName}'`);
-        exitCode && whereList.push(`exitCode='${exitCode}'`);
+        if (exitCode !== undefined) {
+            if (exitCode === null) {
+                whereList.push('exitCode is null');
+            } else {
+                whereList.push(`exitCode='${exitCode}'`);
+            }
+
+        }
+
         var whereSql = '';
         whereList.length && (whereSql = `where ${whereList.join(' and ')}`);
         var sql = `select * from t_task_exec_list ${whereSql} order by startTime desc`;

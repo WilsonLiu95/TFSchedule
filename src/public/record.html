@@ -27,7 +27,7 @@
                 </el-form-item>
                 <el-form-item label="退出码">
                     <el-select filterable v-model="form['exitCode']" size="small" clearable>
-                        <el-option v-for="item in selectConfig.exitCode" :value="item[0]">{{item[0] + '-'+item[1]+'次'}}</el-option>
+                        <el-option v-for="item in selectConfig.exitCode" :value="item[0]">{{ (exitCodeMap[item[0]] || '自定义异常退出码') + item[0] + '-'+item[1]+'次'}}</el-option>
                     </el-select>
                 </el-form-item>
                 </el-switch>
@@ -132,6 +132,12 @@
                     dialogVisible: false,
                     content: '',
                     title: "查看任务执行详情"
+                },
+                exitCodeMap: {
+                    0: '正常执行结束',
+                    1: '未知异常退出',
+                    2: '手动杀死',
+                    null: '尚在执行中 or TFSchedule故障重启丢失任务'
                 }
             }
         },
