@@ -17,11 +17,12 @@ function* bindEvent() {
 
     this.on('taskLevelNotify', ({ type, title, content, taskName }) => {
         // 除了删除任务以外的告警taskDelete
-        var notifyListType = ['lastJobHasNotEnd', 'entryFileIsNotExists', 'closeError', 'addTask', 'modifyTask', 'killTask', 'outtimeTask', 'missrunTask'];
+        // var notifyListType = ['lastJobHasNotEnd', 'entryFileIsNotExists', 'closeError', 'addTask', 'modifyTask', 'killTask', 'outtimeTask', 'missrunTask'];
 
         co(function* () {
             var { notifyList } = that;
-            if (notifyListType.indexOf(type) !== -1) {
+            // 删除任务，则对系统管理员进行告警，因为任务已被删除无需要去数据库中更新
+            if (type !== 'taskDelete') {
                 const taskListInfo = yield mysqlClient.query(`select * from t_task_list where taskName="${taskName}"`);
                 // 如果是任务级别则直接告警任务相关人员
                 if (taskListInfo[0] && taskListInfo[0].owner) {

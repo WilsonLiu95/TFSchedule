@@ -74,7 +74,7 @@ function* checkTaskOutTime(taskInfo) {
         const deadTimeStr = moment(deadline).format('YYYY-MM-DD HH:mm:ss');
 
         this.emit('taskLevelNotify', {
-            tyep: 'outtimeTask', taskName,
+            type: 'outtimeTask', taskName,
             title: `(${taskName})-${moment().format('YYYY-MM-DD HH:mm:ss')} 任务超时`, content: `开始时间${lastStartTimeStr},dealine为${deadTimeStr}`
         });
     }
