@@ -44,8 +44,8 @@ function* endExecTask({ taskName, exitCode, taskVersion, errorLogList }) {
         if (exitCode !== 0) {
             this.emit('taskLevelNotify', {
                 type: 'closeError', exitCode, taskName,
-                title: `批跑任务${taskName} closeError,退出错误码：exitCode:${exitCode}`,
-                content: errorLogList.join('\n')
+                title: `${taskName} (closeError)`,
+                content: `退出错误码:${exitCode} \n ${errorLogList.join('\n')}`
             });
         }
 

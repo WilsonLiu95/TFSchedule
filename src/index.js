@@ -5,19 +5,45 @@ const co = require('co');
 const util = require('util');
 const path = require('path');
 
-const { scheduleJob, scheduledJobs } = require('node-schedule');
+const {
+    scheduleJob,
+    scheduledJobs
+} = require('node-schedule');
 
-const { runWeb, webApp } = require('./webapp');
-const { checkTaskExecListExistsSql, checkTaskListExistsSql, clearTaskExecRecordTpl } = require('./lib/tpl');
+const {
+    runWeb,
+    webApp
+} = require('./webapp');
+const {
+    checkTaskExecListExistsSql,
+    checkTaskListExistsSql,
+    clearTaskExecRecordTpl
+} = require('./lib/tpl');
 // const { clearTaskExecRecord } = require('./lib/clearTaskExecRecord');
 
-const { bindEvent } = require('./lib/bindEvent');
-const { startExecTask, endExecTask } = require('./lib/hook');
-const { monitorHelper } = require('./lib/monitorHelper');
-const { execTask } = require('./lib/execTask');
+const {
+    bindEvent
+} = require('./lib/bindEvent');
+const {
+    startExecTask,
+    endExecTask
+} = require('./lib/hook');
+const {
+    monitorHelper
+} = require('./lib/monitorHelper');
+const {
+    execTask
+} = require('./lib/execTask');
 
 function TFSchedule(config) {
-    var { backExecRecordNum, mysqlConfig, taskRootPath, command, entryFile, notifyList } = config;
+    var {
+        backExecRecordNum,
+        mysqlConfig,
+        taskRootPath,
+        command,
+        entryFile,
+        notifyList
+    } = config;
     // 挂载配置并校验
     this.config = config;
 
@@ -50,7 +76,11 @@ function TFSchedule(config) {
 }
 
 TFSchedule.prototype = {
-    execTask, startExecTask, endExecTask, monitorHelper, bindEvent,
+    execTask,
+    startExecTask,
+    endExecTask,
+    monitorHelper,
+    bindEvent,
     init: function* () {
         // 初始化mysql连接
         try {
@@ -68,7 +98,10 @@ TFSchedule.prototype = {
     },
     // 系统启动函数
     startSystem: function* () {
-        var { taskRuleMap, mysqlClient } = this;
+        var {
+            taskRuleMap,
+            mysqlClient
+        } = this;
         var that = this;
 
         // 1. 绑定监控小助手, 每3S运行一次
@@ -77,14 +110,19 @@ TFSchedule.prototype = {
             co(function* () {
                 yield that.monitorHelper();
             });
-        }
-        );
+        });
         // 2. 查询数据库中所有任务
         var taskListRes = yield mysqlClient.query('select taskName,rule from t_task_list');
-        this.emit('notify', { title: `批跑系统开始启动,共有${taskListRes.length}项定时任务`, content: JSON.stringify(taskListRes) });
+        this.emit('notify', {
+            title: `批跑系统开始启动,共有${taskListRes.length}项定时任务`,
+            content: JSON.stringify(taskListRes)
+        });
 
         // 3. 将当前数据库中的任务与规则 存储在全局对象G_task_map中,并挂载任务到定时器上
-        taskListRes.forEach(({ taskName, rule }) => {
+        taskListRes.forEach(({
+            taskName,
+            rule
+        }) => {
             taskRuleMap[taskName] = rule;
             console.log(`(${taskName})-挂载定时器，按照${rule}规则定时执行`);
             scheduleJob(taskName, rule, () => {
@@ -99,7 +137,13 @@ TFSchedule.prototype = {
     },
     // 设置清理小助手
     setClearRecord: function* () {
-        var { config, taskRootPath, mysqlClient, scheduledJobs, notifyList } = this;
+        var {
+            config,
+            taskRootPath,
+            mysqlClient,
+            scheduledJobs,
+            notifyList
+        } = this;
         try {
             const clearTaskExecRecordCode = clearTaskExecRecordTpl(config);
             const execFilePath = path.join(taskRootPath, 'clearTaskExecRecord/index.js');
@@ -117,7 +161,10 @@ TFSchedule.prototype = {
     },
     throwError(errMsg, error) {
         try {
-            this.emit('systemError', { errMsg, error });
+            this.emit('systemError', {
+                errMsg,
+                error
+            });
             console.error(errMsg, error);
         } catch (e) {
             console.error('systemError', errMsg, e);
@@ -127,4 +174,8 @@ TFSchedule.prototype = {
 };
 // 继承事件
 util.inherits(TFSchedule, events.EventEmitter);
-module.exports = { TFSchedule, runWeb, webApp };
+module.exports = {
+    TFSchedule,
+    runWeb,
+    webApp
+};

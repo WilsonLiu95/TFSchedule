@@ -1,15 +1,28 @@
-const { scheduleJob } = require('node-schedule');
+const {
+    scheduleJob
+} = require('node-schedule');
 const parser = require('cron-parser');
 const moment = require('moment');
 // 小助手1：已存在的任务：数据库更新rule，cancel定时任务 并设置挂载新规则的定时任务；新增任务：按照rule进行挂载
-function* checkLoadTask({ taskName, rule }) {
-    var { taskRuleMap, scheduledJobs } = this;
-    if (taskRuleMap[taskName] && taskRuleMap[taskName] === rule) { return false; }
+function* checkLoadTask({
+    taskName,
+    rule
+}) {
+    var {
+        taskRuleMap,
+        scheduledJobs
+    } = this;
+    if (taskRuleMap[taskName] && taskRuleMap[taskName] === rule) {
+        return false;
+    }
     if (!taskRuleMap[taskName]) {
         // 新增的任务，直接进行挂载
         this.emit('taskLevelNotify', {
-            type: 'addTask', taskName, rule,
-            title: `(${taskName})-新增任务，将该任务${rule}挂载定时器`
+            type: 'addTask',
+            taskName,
+            rule,
+            title: `${taskName} (addTask)`,
+            content: `新增任务按照规则${rule}挂载`
         });
     } else {
         // 比较内存中对应任务的规则与数据库中的是否一致，不一致则cancel之前的任务并进行重启
@@ -17,8 +30,12 @@ function* checkLoadTask({ taskName, rule }) {
         scheduledJobs[taskName].cancel();
         const oldRule = taskRuleMap[taskName];
         this.emit('taskLevelNotify', {
-            type: 'modifyTask', taskName, oldRule, newRule: rule,
-            title: `(${taskName})-规则更新，${taskRuleMap[taskName]} -> ${rule},重新挂载该任务的定时器`
+            type: 'modifyTask',
+            taskName,
+            oldRule,
+            newRule: rule,
+            title: `${taskName} (modifyTask)`,
+            content: `${taskRuleMap[taskName]} -> ${rule},重新挂载该任务的定时器`
         });
     }
     // 重新进行挂载任务
@@ -33,8 +50,14 @@ function* checkLoadTask({ taskName, rule }) {
 }
 // 小助手2：用户设置taskStatus为2，则杀死当前进程,
 function* checkIsKillTask(taskInfo) {
-    var { mysqlClient, childProcessHandleCache } = this;
-    var { taskName, taskStatus } = taskInfo;
+    var {
+        mysqlClient,
+        childProcessHandleCache
+    } = this;
+    var {
+        taskName,
+        taskStatus
+    } = taskInfo;
     if (taskStatus === 2) {
         console.log(`(${taskName})-触发小助手2：${JSON.stringify(taskInfo)}`);
         // 超时发送告警
@@ -42,8 +65,10 @@ function* checkIsKillTask(taskInfo) {
             childProcessHandleCache[taskName].kill('SIGHUP');
             delete childProcessHandleCache[taskName];
             this.emit('taskLevelNotify', {
-                type: 'killTask', taskName,
-                title: `${taskName}任务被手动杀死`
+                type: 'killTask',
+                taskName,
+                title: `${taskName} (killTask)`,
+                content: '任务被手动杀死'
             });
         }
         // taskStatus状态2位短暂状态，杀死后恢复为1，表示无效
@@ -52,8 +77,16 @@ function* checkIsKillTask(taskInfo) {
 }
 // 小助手3：根据数据库中的timeout字段，进行超时提醒
 function* checkTaskOutTime(taskInfo) {
-    var { childProcessHandleCache } = this;
-    var { taskName, lastStartTime, timeout, lastEndTime, lastWarningTime } = taskInfo;
+    var {
+        childProcessHandleCache
+    } = this;
+    var {
+        taskName,
+        lastStartTime,
+        timeout,
+        lastEndTime,
+        lastWarningTime
+    } = taskInfo;
 
     // 判断任务执行是否超时首先需要满足DB与memory同时标记任务正在运行，以避免取DB时lastStartTime尚未更新，导致错误告警
     const dbIsLastTaskExecEnd = moment(lastEndTime).diff(moment(lastStartTime), 'seconds') >= 0;
@@ -74,18 +107,31 @@ function* checkTaskOutTime(taskInfo) {
         const deadTimeStr = moment(deadline).format('YYYY-MM-DD HH:mm:ss');
 
         this.emit('taskLevelNotify', {
-            type: 'outtimeTask', taskName,
-            title: `(${taskName})-${moment().format('YYYY-MM-DD HH:mm:ss')} 任务超时`, content: `开始时间${lastStartTimeStr},dealine为${deadTimeStr}`
+            type: 'outtimeTask',
+            taskName,
+            title: `${taskName} (outtimeTask)`,
+            content: `开始时间${lastStartTimeStr},dealine为${deadTimeStr} ${moment().format('YYYY-MM-DD HH:mm:ss')} 任务超时`
         });
     }
 }
 
 // 小助手4： 任务漏执行，告警通知
 function* checkIsPassExec(taskInfo) {
-    var { childProcessHandleCache } = this;
-    const { taskName, rule, lastStartTime, lastEndTime, lastWarningTime, taskStatus } = taskInfo;
+    var {
+        childProcessHandleCache
+    } = this;
+    const {
+        taskName,
+        rule,
+        lastStartTime,
+        lastEndTime,
+        lastWarningTime,
+        taskStatus
+    } = taskInfo;
     // 只对有效状态的任务进行检测
-    if (taskStatus !== 0) { return false; }
+    if (taskStatus !== 0) {
+        return false;
+    }
     try {
         const dbIsLastTaskExecEnd = moment(lastEndTime).diff(moment(lastStartTime), 'seconds') >= 0;
         const memoryIsHasExecingTaskProcees = childProcessHandleCache[taskName];
@@ -101,9 +147,10 @@ function* checkIsPassExec(taskInfo) {
             // 未告警则进行告警，告警过则忽略
             if (lastStartTimeIsNotShouldExecTime && isHasPassShouldExecTime && !isHasWaring) {
                 this.emit('taskLevelNotify', {
-                    type: 'missrunTask', taskName,
-                    title: `(${taskName})-任务在${moment(lastShouldExecTime).format('YYYY-MM-DD HH:mm:ss')}漏执行`,
-                    content: `上次任务本该在:${moment(lastShouldExecTime).diff(moment(lastStartTime), 'seconds')}S前的${moment(lastShouldExecTime).format('YYYY-MM-DD HH:mm:ss')}执行;isHasPassShouldExecTime:${moment().diff(moment(lastShouldExecTime), 'seconds')}，请关注，如果是因为任务被设置为无效导致，请忽略`
+                    type: 'missrunTask',
+                    taskName,
+                    title: `${taskName} (missrunTask)`,
+                    content: `任务漏执行，上次任务本该在:${moment(lastShouldExecTime).diff(moment(lastStartTime), 'seconds')}S前的${moment(lastShouldExecTime).format('YYYY-MM-DD HH:mm:ss')}执行;isHasPassShouldExecTime:${moment().diff(moment(lastShouldExecTime), 'seconds')}，请关注，如果是因为任务被设置为无效导致，请忽略`
                 });
             }
         }
@@ -129,15 +176,21 @@ function checkTaskIsDelete(taskRuleMap, dbCurrentTaskList) {
     });
 
     deleteTaskList.length && this.emit('taskLevelNotify', {
-        type: 'taskDelete', taskName: deleteTaskList.join(','),
-        title: '数据库任务记录被删除，请关注',
-        content: deleteTaskList.join(',')
+        type: 'taskDelete',
+        taskName: deleteTaskList.join(','),
+        title: `${deleteTaskList.join(',')} (taskDelete)`,
+        content: '任务被删除，请关注'
     });
 }
 
 // 小助手6： 手动执行任务
-function* checkIsRunTaskAgain({ taskName, taskStatus }) {
-    var { mysqlClient } = this;
+function* checkIsRunTaskAgain({
+    taskName,
+    taskStatus
+}) {
+    var {
+        mysqlClient
+    } = this;
     if (taskStatus === 3) {
         console.log(`(${taskName})-小助手6 手动调用任务`);
         yield mysqlClient.query(`update t_task_list set taskStatus=0 where taskName='${taskName}'`);
@@ -147,7 +200,10 @@ function* checkIsRunTaskAgain({ taskName, taskStatus }) {
 // 小助手3S运行一次，进行监控
 function* monitorHelper() {
     var that = this;
-    var { mysqlClient, taskRuleMap } = this;
+    var {
+        mysqlClient,
+        taskRuleMap
+    } = this;
     try {
         const monitorStartTime = Date.now();
 

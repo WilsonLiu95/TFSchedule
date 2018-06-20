@@ -25,7 +25,8 @@ function* execTask(taskName) {
         if (childProcessHandleCache[taskName]) { // 上一个任务子进程尚未退出
             return this.emit('taskLevelNotify', {
                 type: 'lastJobHasNotEnd', taskName,
-                title: `(${taskName} lastJobHasNotEnd)-任务当前正在执行未退出,跳过本次运行`
+                title: `${taskName} (lastJobHasNotEnd)`,
+                content: '任务当前正在执行未退出,跳过本次运行'
             });
         }
         if (taskStatus !== 0) {
@@ -58,7 +59,8 @@ function* spawnTask(taskInfo) {
         if (!moment(lastWarningTime).isAfter(lastStartTime)) { // 如果未告警过，则进行告警
             this.emit('taskLevelNotify', {
                 type: 'entryFileIsNotExists', taskName,
-                title: `${taskName} entryFileIsNotExists-任务入口执行文件不存在`
+                title: `${taskName} (entryFileIsNotExists)`,
+                content: `${path.join(taskName, entryFile)} 入口文件不存在`
             });
         }
         return false;
