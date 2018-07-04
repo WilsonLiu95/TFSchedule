@@ -110,7 +110,7 @@ function* checkTaskOutTime(taskInfo) {
             type: 'outtimeTask',
             taskName,
             title: `${taskName} (outtimeTask)`,
-            content: `开始时间${lastStartTimeStr},dealine为${deadTimeStr} ${moment().format('YYYY-MM-DD HH:mm:ss')} 任务超时`
+            content: `任务超时设置时间为${timeout}秒，本次任务开始时间${lastStartTimeStr}, 截止目前${deadTimeStr}，执行任务超时`
         });
     }
 }

@@ -30,7 +30,7 @@ function* bindEvent() {
                 }
                 yield mysqlClient.query(`update t_task_list SET lastWarningTime='${moment().format('YYYY-MM-DD HH:mm:ss')}' where taskName="${taskName}"`);
             }
-            that.emit('notify', { title, content, notifyList });
+            that.emit('notify', { type, title, content, notifyList });
         });
     });
 
@@ -39,9 +39,10 @@ function* bindEvent() {
         if (error) {
             content = error.name + error.message + errMsg.stack;
         }
-        this.emit('notify', { title: errMsg, content, notifyList: that.notifyList });
+        that.emit('notify', { type: 'systemError', title: errMsg, content, notifyList: that.notifyList });
     });
     this.on('notify', ({ title, content, notifyList }) => {
+        notifyList = notifyList || that.notifyList;
         console.warn('#notify#', title, content, notifyList);
     });
 }
