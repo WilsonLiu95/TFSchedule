@@ -15,7 +15,7 @@ function* bindEvent() {
         });
     });
 
-    this.on('taskLevelNotify', ({ type, title, content, taskName }) => {
+    this.on('taskLevelNotify', ({ type, title, content, taskName, taskVersion }) => {
         // 除了删除任务以外的告警taskDelete
         // var notifyListType = ['lastJobHasNotEnd', 'entryFileIsNotExists', 'closeError', 'addTask', 'modifyTask', 'killTask', 'outtimeTask', 'missrunTask'];
 
@@ -29,7 +29,12 @@ function* bindEvent() {
                     notifyList = taskListInfo[0].owner;
                 }
                 yield mysqlClient.query(`update t_task_list SET lastWarningTime='${moment().format('YYYY-MM-DD HH:mm:ss')}' where taskName="${taskName}"`);
+                // 有任务版本传入，则更新对应版本的告警时间
+                if (taskVersion) {
+                    yield mysqlClient.query(`update t_task_exec_list set warningTime='${moment().format('YYYY-MM-DD HH:mm:ss')}' where taskName='${taskName}' and taskVersion='${taskVersion}'`);
+                }
             }
+
             that.emit('notify', { type, title, content, notifyList });
         });
     });

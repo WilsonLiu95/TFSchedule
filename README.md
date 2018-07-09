@@ -1,8 +1,10 @@
 
 ## 背景
+
 随着node的出现与发展，前端承担了越来越多的职责。
 
 前端也有越来越多的场景需要使用批跑脚本
+
 - 利用爬虫或者接口定时同步数据
 - 线上配置文件、数据文件定时批跑生成并发布到线上
 
@@ -11,7 +13,9 @@
 node本身有丰富的npm模块，本模块的定时执行依赖于`node-schedule`模块(star 4300+)。
 
 ------
+
 ## 特性
+
 1. 高稳定性 (子进程调用任务，异常隔离)
 2. 弱侵入性 (任务迁移无改造成本)
 3. 可视化的web管理端 (任务与任务执行记录入库可视化管理,原理crontab管理烦恼)
@@ -22,16 +26,20 @@ node本身有丰富的npm模块，本模块的定时执行依赖于`node-schedul
     - 任务执行产生的 日志文件&发布的文件 根据版本(YYYYMM/DD/HHMMSS)备份
 
 ------
+
 ## 接入使用
+
 ### demo
+
 可直接参见 example 目录下的例子(因为本系统为node编写而成，运行请先准备好node环境)
 
-1. 安装
+#### 1. 安装
+
 ```shell
 npm install tfschedule --save
 ```
 
-2.  引入模块并输入参数
+#### 2. 引入模块并输入参数
 
 ```javascript
     // example/init.js
@@ -51,8 +59,10 @@ npm install tfschedule --save
     // shell下执行运行
     node example/init.js
 ```
-3. 启动web管理系统
-web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分开启动，以避免互相影响。
+
+#### 3. 启动web管理系统
+
+web系统在8017端口打开，`http://127.0.0.1:8017` 推荐批跑与web系统分开启动，以避免互相影响。
 部署到线上时建议通过ningx或者apapche配置反向代理，将某个前缀路径配置到本系统的端口。
 
 ```javascript
@@ -88,7 +98,9 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
     // shell下运行，启动web系统
     node example/initweb.js
 ```
-4. 新建任务文件
+
+#### 4. 新建任务文件
+
 `example/task`目录下有个`demo`文件夹，以`demo/node`为例。
 
 ```javascript
@@ -98,7 +110,8 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
     fs.writeFileSync(path.join(__dirname,'publish','a.txt'),'sdsds'); // 写入publish目录，可自动备份版本
 ```
 
-5. web系统新增任务
+#### 5. web系统新增任务
+
 在web系统新增任务，例如如下配置。此时，批跑管理系统将按照设定的任务规则运行，每30S进行一次。
 
 ```javascript
@@ -114,7 +127,9 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 ```
 
 ### 使用规范与细节
+
 #### taskName && command && entryFile
+
 `TFSchedule`规范任务名`taskName`唯一，一旦添加后，不建议更改(web端不提供入口)。
 
 `taskName`为任务与`taskRootPath`的相对路径，建议最多不超过2级，否则不方便管理与查看，例如写为`demo/node`的方式，则执行路径变为`demo/node/index.js`。
@@ -126,6 +141,7 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 通过给任务指定不同的执行器与入口文件，我们可以将运行任何类型的语言任务。
 
 #### 任务退出码 exitCode
+
 `TFSchedule`会监听子进程的`close`事件，`close`事件有2个参数`exitCode, signalCode`。
 
 `exitCode`即为退出码,当任务正常退出，则 `exitCode` 为0,进程因为未捕获的异常导致退出会接收到1。
@@ -137,11 +153,14 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 `TFSchedule`监听到非0的退出码会触发异常退出 `closeError` 告警，如果接收到`signalCode`会触发`killTask`敏感操作告警。
 
 另外，存在`exitCode`为null的情况，即当任务尚在执行 or 任务进行中时遇到TFSchedule重启导致不再更新任务执行数据。
+
 **任务运行完，请及时退出**
+
 1. 避免类似`express`一样起一个服务导致不退出
 2. 避免mysql连接未退出造成任务不退出
 
 #### 事件系统
+
 `TFSchedule`继承了`events.EventEmitter`，目前暴露了如下事件可以绑定回调函数。
 
 ```javascript
@@ -157,8 +176,11 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 ```
 
 ------
+
 ## 系统设计与实现介绍
+
 ### 目录结构
+
 以demo为例，`task`为任务的根目录，将所有任务集中在此目录下，每个任务的关键信息`taskName、rule`等则录入表`t_task_list`进行管理。
 
 批跑系统去数据库中加载任务，遍历挂载执行。
@@ -203,12 +225,14 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 ```
 
 ### 高稳定性
+
 1. 模块化,通用逻辑抽离
 2. 强化异常逻辑处理，并进行异常告警`SystemError`
 3. 子进程调用任务，异常隔离
 4. 兜底，pm2调用。任何系统都难以避免挂掉，如果系统挂掉则通过PM2自动重启任务。
 
 ### 弱侵入性
+
 摒弃通过node`require`的方式加载对应的任务脚本，而是通过利用node子进程`child_process.spawn`的方式执行任务。并可以自己指定执行器与入口文件s
 
 1. 批跑脚本任务代码无需做任何改造，可以选择自己喜欢的方式去编写代码。
@@ -216,6 +240,7 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 3. 多语言支持，而非仅能支持node
 
 ### 可视化的web管理端
+
 1. 通过表`t_task_list`来进行管理任务，主要录入每个任务的`rule、timeout、lastStartTime、lastEndTime、lastWarningTime`来实现任务的管理
 2. 通过表`t_task_exec_list`来记录任务执行记录，录入每一次执行过程的相关信息`taskName,taskVersion,startTime,endTime,exitCode,warningTime,duration,errorLogs,publishFileList`
 3. 通过可视化的WEB系统对任务以及执行记录进行管理
@@ -226,7 +251,9 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 ![历史版本文件查看](./docs/img/task_publish_file.jpg)
 
 ### 便利的基础设施服务
+
 #### 1. 秒级定时批跑执行
+
 利用开源的`node-schedule`模块，该模块可完成类似`crontab`的功能，并且支持`crontab`的语法规则。主要用到`scheduleJob`这个接口进行定时任务挂载。
 
 系统启动时，去数据库的`t_task_list`将所有任务的`taskName、rule`数据取出，并遍历进行挂载。同时，挂载后的句柄存储在`scheduleJobs`中。
@@ -241,6 +268,7 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 ```
 
 #### 2. 9类任务级别异常与敏感操作告警 & 框架执行异常告警
+
 - 任务级别的异常 taskLevelNotify
     1. `entryFileIsNotExists` 任务指定的入口文件不存在
     2. `lastJobHasNotEnd` 同一个任务的上次尚在执行未退出
@@ -256,6 +284,7 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 - `TFSchedule`系统启动通知 `notify`
 
 #### 3. 日志输出
+
 父进程通过监听子进程的`stdout,stderr`两个输出流，得到子进程的日志输出。
 
 日志将会存放在`task/logs/YYYYMM/DD/HHmmss.log`目录下，按照任务执行的时间存放，同时将`stderr`的信息入库(为保护批跑系统，做限制，只录入前50条)，用以在UI界面展示与告警时输出。用户如果需要详细的日志还是需要查阅整个日志文件。
@@ -263,6 +292,7 @@ web系统在8017端口打开，http://127.0.0.1:8017 推荐批跑与web系统分
 node中`stderr`可以通过`console.error`输出。另外如果进程异常退出也会输出到stderr，建议在`catch`住异常后通过`console.error`进行输出，再对异常进行处理。
 
 #### 4. 版本备份
+
 除了日志以外，任务的执行过程中可能会产生一系列的文件，对于这些文件往往也也有进行版本备份的诉求。
 
 每次任务执行的时候，可以将文件写入到对应任务的的`publish`目录，任务退出时，批跑系统会检测其`publish`是否为空，不为空则移动到`history/YYYYMM/DD/HHmmss/`目录下，并以版本号为文件夹存储，以方便备份查看。
@@ -270,6 +300,7 @@ node中`stderr`可以通过`console.error`输出。另外如果进程异常退�
 建议：如果需要将文件发布上线可写一个通用模块方法进行调用
 
 #### 5. 监控小助手
+
 `TFSchedule`挂载一个每3S执行一次的监控小助手，达到准实时监控的效果。
 
 - 小助手1：已存在的任务：数据库更新rule，cancel定时任务 并设置挂载新规则的定时任务；新增任务：按照rule进行挂载 `addTask,modifyTask`
@@ -279,20 +310,25 @@ node中`stderr`可以通过`console.error`输出。另外如果进程异常退�
 - 小助手5：任务在数据库中被删除告警系统管理员`deleteTask`
 
 #### 6. 任务的初始化与结束
+
 hook.js包含startExecTask, endExecTask两个函数在任务开始结束时运行。
 
 startExecTask 执行如下动作
+
 - 置空任务的发布文件夹 `task/taskName/publish`
 - 更新任务表中的`lastStartTime,taskVersion`(任务的版本号根据运行时间生成`const taskVersion = moment().format('YYYYMM/DD/HHmmss');`)
 - 插入一条任务执行记录到`t_task_exec_list`
 
 endExecTask执行如下动作
+
 - 设置退出的事件与退出码
 - **版本备份** ：备份本次执行的发布文件夹`task/taskName/publish`到`task/taskName/history/taskVersion`
 - 更新任务运行记录(包括录入logs、发布的文件路径数组)
 
 ------
+
 ## 参考资料
+
 1. [node-schedule](https://github.com/node-schedule/node-schedule)
 2. [解析crontab的rule规则 cron-parser](https://github.com/harrisiirak/cron-parser)
 3. [process对象与exitCode](http://javascript.ruanyifeng.com/nodejs/process.html#toc9)

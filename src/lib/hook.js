@@ -43,7 +43,7 @@ function* endExecTask({ taskName, exitCode, taskVersion, errorLogList }) {
         // 任务执行不成功,进行告警
         if (exitCode !== 0) {
             this.emit('taskLevelNotify', {
-                type: 'closeError', exitCode, taskName,
+                type: 'closeError', exitCode, taskName, taskVersion,
                 title: `${taskName} (closeError)`,
                 content: `退出错误码:${exitCode} \n ${errorLogList.join('\n')}`
             });
@@ -78,7 +78,9 @@ function* updateTaskExec({ taskName, exitCode, taskVersion, errorLogList, taskPu
         if (moment(lastWarningTime).isAfter(lastStartTime)) {
             warningTime = moment(lastWarningTime).format('YYYY-MM-DD HH:mm:ss');
         }
-        const updateSql = mysql.format(`update t_task_exec_list set endTime=?, warningTime=?, exitCode=? , errorLogs=? ,publishFileList=?,duration=? where taskName='${taskName}' and taskVersion='${taskVersion}'`, [endTime, warningTime, exitCode, errorLogList.join('<<<<>>>>'), publishFileList.toString(), duration]);
+        const updateSql = mysql.format(`update t_task_exec_list set endTime=?, warningTime=?, exitCode=? , errorLogs=? ,
+            publishFileList=?,duration=? where taskName='${taskName}' and taskVersion='${taskVersion}'`
+            , [endTime, warningTime, exitCode, errorLogList.join('<<<<>>>>'), publishFileList.toString(), duration]);
         console.log(`(${taskName}-${taskVersion})-执行完成，耗时${duration}秒,退出码${exitCode}`);
         yield mysqlClient.query(updateSql);
     } catch (e) {

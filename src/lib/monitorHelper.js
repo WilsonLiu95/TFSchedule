@@ -56,7 +56,8 @@ function* checkIsKillTask(taskInfo) {
     } = this;
     var {
         taskName,
-        taskStatus
+        taskStatus,
+        taskVersion
     } = taskInfo;
     if (taskStatus === 2) {
         console.log(`(${taskName})-触发小助手2：${JSON.stringify(taskInfo)}`);
@@ -66,7 +67,7 @@ function* checkIsKillTask(taskInfo) {
             delete childProcessHandleCache[taskName];
             this.emit('taskLevelNotify', {
                 type: 'killTask',
-                taskName,
+                taskName, taskVersion,
                 title: `${taskName} (killTask)`,
                 content: '任务被手动杀死'
             });
@@ -85,7 +86,8 @@ function* checkTaskOutTime(taskInfo) {
         lastStartTime,
         timeout,
         lastEndTime,
-        lastWarningTime
+        lastWarningTime,
+        taskVersion
     } = taskInfo;
 
     // 判断任务执行是否超时首先需要满足DB与memory同时标记任务正在运行，以避免取DB时lastStartTime尚未更新，导致错误告警
@@ -108,7 +110,7 @@ function* checkTaskOutTime(taskInfo) {
 
         this.emit('taskLevelNotify', {
             type: 'outtimeTask',
-            taskName,
+            taskName, taskVersion,
             title: `${taskName} (outtimeTask)`,
             content: `任务超时设置时间为${timeout}秒，本次任务开始时间${lastStartTimeStr}, 截止目前${deadTimeStr}，执行任务超时`
         });
@@ -150,7 +152,7 @@ function* checkIsPassExec(taskInfo) {
                     type: 'missrunTask',
                     taskName,
                     title: `${taskName} (missrunTask)`,
-                    content: `任务漏执行，上次任务本该在:${moment(lastShouldExecTime).diff(moment(lastStartTime), 'seconds')}S前的${moment(lastShouldExecTime).format('YYYY-MM-DD HH:mm:ss')}执行;isHasPassShouldExecTime:${moment().diff(moment(lastShouldExecTime), 'seconds')}，请关注，如果是因为任务被设置为无效导致，请忽略`
+                    content: `任务漏执行，上次任务本该在:${moment(lastShouldExecTime).diff(moment(lastStartTime), 'seconds')}S前的${moment(lastShouldExecTime).format('YYYY-MM-DD HH:mm:ss')}执行;请关注，如果是因为任务被设置为无效导致，请忽略`
                 });
             }
         }
