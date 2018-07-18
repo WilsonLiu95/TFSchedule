@@ -5,7 +5,10 @@ const spawn = require('child_process').spawn;
 
 // 执行一次任务
 function* execTask(taskName) {
-    var { mysqlClient, childProcessHandleCache } = this;
+    var {
+        mysqlClient,
+        childProcessHandleCache
+    } = this;
 
     try {
         // 1: 数据库查询该条任务,
@@ -15,7 +18,9 @@ function* execTask(taskName) {
             return false;
         }
         const taskInfo = data[0];
-        const { taskStatus } = taskInfo;
+        const {
+            taskStatus
+        } = taskInfo;
 
         /**
          * 2. 检验该任务是否可以创建新的进程运行
@@ -24,7 +29,8 @@ function* execTask(taskName) {
          */
         if (childProcessHandleCache[taskName]) { // 上一个任务子进程尚未退出
             return this.emit('taskLevelNotify', {
-                type: 'lastJobHasNotEnd', taskName,
+                type: 'lastJobHasNotEnd',
+                taskName,
                 title: `${taskName} (lastJobHasNotEnd)`,
                 content: '任务当前正在执行未退出,跳过本次运行'
             });
@@ -42,8 +48,17 @@ function* execTask(taskName) {
 }
 
 function* spawnTask(taskInfo) {
-    var { childProcessHandleCache, taskRootPath, command, entryFile } = this;
-    var { taskName, lastWarningTime, lastStartTime } = taskInfo;
+    var {
+        childProcessHandleCache,
+        taskRootPath,
+        command,
+        entryFile
+    } = this;
+    var {
+        taskName,
+        lastWarningTime,
+        lastStartTime
+    } = taskInfo;
     // 默认使用node运行，入口文件未index.js
     command = taskInfo.command || command;
     entryFile = taskInfo.entryFile || entryFile;
@@ -58,7 +73,8 @@ function* spawnTask(taskInfo) {
     if (!fs.existsSync(taskExecFilePath)) {
         if (!moment(lastWarningTime).isAfter(lastStartTime)) { // 如果未告警过，则进行告警
             this.emit('taskLevelNotify', {
-                type: 'entryFileIsNotExists', taskName,
+                type: 'entryFileIsNotExists',
+                taskName,
                 title: `${taskName} (entryFileIsNotExists)`,
                 content: `${path.join(taskName, entryFile)} 入口文件不存在`
             });
@@ -67,8 +83,14 @@ function* spawnTask(taskInfo) {
     }
 
     // 调用 任务开始运行的钩子函数
-    yield this.startExecTask({ taskName, taskVersion });
-    this.emit('taskStart', { taskName, taskVersion });
+    yield this.startExecTask({
+        taskName,
+        taskVersion
+    });
+    this.emit('taskStart', {
+        taskName,
+        taskVersion
+    });
     childProcessHandleCache[taskName] = spawn(command, [taskExecFilePath]);
     const taskPid = `(pid:${childProcessHandleCache[taskName].pid})`;
 
@@ -93,7 +115,18 @@ function* spawnTask(taskInfo) {
 
         fs.appendFileSync(taskLogFile, logInfo);
     });
-
+    // 每当出现以下情况时触发 'error' 事件：error事件不捕捉将导致父进程退出
+    // 1.进程无法被衍生；
+    // 2.进程无法被杀死；
+    // 3.向子进程发送信息失败。
+    childProcessHandleCache[taskName].on('error', (err) => {
+        this.emit('taskEnd', {
+            taskName,
+            exitCode: 3,
+            taskVersion,
+            errorLogList: [JSON.stringify(err)]
+        });
+    });
     childProcessHandleCache[taskName].on('close', (exitCode, signalCode) => {
         var content;
         try {
@@ -110,7 +143,12 @@ function* spawnTask(taskInfo) {
 
             // 删除子进程句柄的引用，以释放内存
             delete childProcessHandleCache[taskName];
-            this.emit('taskEnd', { taskName, exitCode, taskVersion, errorLogList });
+            this.emit('taskEnd', {
+                taskName,
+                exitCode,
+                taskVersion,
+                errorLogList
+            });
         } catch (e) {
             this.throwError('child process close', e);
         }

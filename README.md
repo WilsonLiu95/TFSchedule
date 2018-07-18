@@ -272,7 +272,7 @@ web系统在8017端口打开，`http://127.0.0.1:8017` 推荐批跑与web系统�
 - 任务级别的异常 taskLevelNotify
     1. `entryFileIsNotExists` 任务指定的入口文件不存在
     2. `lastJobHasNotEnd` 同一个任务的上次尚在执行未退出
-    3. `closeError` `exitCode`非0，即异常退出
+    3. `closeError` `exitCode`非0，即异常退出（包括调用子进程时，触发error事件）
     4. `outtimeTask` 任务执行超时告警(`t_task_list`表中每个任务可指定超时时间为多少秒`timeout`)
     5. `missrunTask` 漏执行告警(`cron-parser`解析`rule`得到上次应该运行时间，通过与任务的`lastStartTime`比较确定是否漏执行)
 - 任务级别的敏感操作 taskLevelNotify
