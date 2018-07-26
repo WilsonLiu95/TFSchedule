@@ -84,9 +84,30 @@ function bindCgi() {
         res.json(data);
     }));
     webApp.get('/fileContent', wrap(function* (req, res) {
-        var fileStr = getFileContent(req.query.filePath);
-        res.send(fileStr);
+        var { taskRootPath } = userconfig;
+        // 先判断是否正确传参
+        const filePath = req.query && req.query.filePath;
+        if (!req.query.filePath) { return '请指定日志文件';}
 
+        const fileAbsoutePath = path.join(taskRootPath, filePath);
+
+        // 只允许获取根目录下文件
+        const isFileInTaskRootDir = fileAbsoutePath.indexOf(taskRootPath) !== -1;
+        if (!isFileInTaskRootDir) { return '只接受获取任务根目录下的文件';}
+
+        // 文件是否存在
+        if (!fs.existsSync(fileAbsoutePath)) { return '文件不存在';}
+        // 存在且是文件，非文件夹
+        const isGetFile = fs.statSync(fileAbsoutePath).isFile();
+        if (!isGetFile) {return '只接受获取文件';}
+
+        // 只允许获取指定路径下文件
+        var relaPath = path.relative(taskRootPath, fileAbsoutePath);
+        // window与linux路径符号不同进行兼容
+        // 只允许获取logs与history目录下的的文件
+        if (!/(\/|\\)(logs|history)(\/|\\)/g.test(relaPath)) { return '只允许获得指定路径下的文件'; }
+
+        return res.sendFile(fileAbsoutePath);
     }));
     webApp.post('/updateTask', wrap(function* (req, res) {
         var taskInfo = req.body;
@@ -145,21 +166,6 @@ function* getSelectConfig(whereSql) {
         };
     });
     return data;
-}
-// 获取对应文件路径的内容
-function getFileContent(filePath) {
-    var fileAbsoutePath;
-    var { taskRootPath } = userconfig;
-    if (fs.existsSync(filePath)) {
-        return fs.readFileSync(filePath);
-    } else {
-        fileAbsoutePath = path.join(taskRootPath, filePath);
-        if (fs.existsSync(fileAbsoutePath)) {
-            return fs.readFileSync(fileAbsoutePath);
-        } else {
-            return '文件不存在';
-        }
-    }
 }
 
 module.exports = {

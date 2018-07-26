@@ -205,7 +205,13 @@
             },
             getTaskList: function () {
                 var vm = this;
-                axios.post(url_prefix + 'getTaskExecList', vm.form).then(res => {
+                var daterange = vm.form.daterange;
+                var option = {
+                    taskName: vm.form.taskName,
+                    daterange: [moment(daterange[0]).format('YYYY-MM-DD 00:00:00'),
+                        moment(daterange[1]).format('YYYY-MM-DD 23:59:59')]
+                }
+                axios.post(url_prefix + 'getTaskExecList', option).then(res => {
                     vm.taskList = res.data.history;
                     if (!vm.selectConfig.isHasData) {
                         vm.selectConfig.isHasData = true;

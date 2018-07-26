@@ -8,7 +8,7 @@ const mysql = require('promise-mysql');
 // 清除上个月所有任务的历史记录
 
 co(function* () {
-    var config = {"backExecRecordNum":1,"mysqlConfig":{"host":"localhost","port":"3306","user":"root","password":"1234","database":"db_schedule"},"taskRootPath":"/Users/wilsonsliu/workspace/git/gitoa/TFSchedule/example/task","notifyList":"wilsonsliuxyz@gmail.com"};
+    var config = {"backExecRecordNum":1,"mysqlConfig":{"host":"localhost","port":"3306","user":"root","password":"1234","database":"db_schedule"},"taskRootPath":"/Users/wilsonsliu/workspace/npm_owner/TFSchedule/example/task","notifyList":"wilsonsliuxyz@gmail.com"};
     yield clearTaskExecRecord(config);
 });
 function* clearTaskExecRecord({taskRootPath, backExecRecordNum, mysqlConfig}) {
