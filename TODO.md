@@ -1,3 +1,13 @@
-INSERT INTO t_task_list (taskName, owner, title, description, rule, command, entryFile, taskStatus, timeout)
-    VALUES
-     ('clearTaskExecRecord', ${notifyList}, '清理小工具', '清除日志文件与任务执行记录', '0 0 3 * * *', 'node', 'index.js', 0, 60);
+# TODOLIST
+
+## version 3.0 引入分布式特性
+TODO: 目前为单机部署版本，**3.0版本**将加入分布式任务调度特性，以下为3.0的设想欢迎讨论~。
+
+1. 在实际调度机器上部署client
+    - client用于从统一DB内读取属于自己的任务列表挂载执行
+    - 同步日志到server
+    - 同步产生的文件server
+2. 一台机器用作web服务器
+    - 接收client同步来的日志及文件
+    - 部署web服务器 提供可视化操作
+    - 修改DB
