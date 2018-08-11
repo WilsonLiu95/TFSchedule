@@ -47,21 +47,31 @@
             </el-pagination>
             <el-dialog title="任务信息" :visible.sync="dialog.dialogFormVisible" size="small">
                 <el-form :model="dialog.taskInfo" :rules="dialog.rules" ref="dialog_taskInfo" label-width="120px">
-                    <el-form-item label="任务名称" prop='taskName'>
-                        <el-input v-model="dialog.taskInfo.taskName" size="small" placeholder="请输入内容" required :disabled="dialog.taskInfo.type !== 'add'"></el-input>
-                    </el-form-item>
-                    <el-form-item label="执行器">
-                        <el-input v-model="dialog.taskInfo.command" size="small" placeholder="不填为默认值" required></el-input>
-                    </el-form-item>
-                    <el-form-item label="入口文件">
-                        <el-input v-model="dialog.taskInfo.entryFile" size="small" placeholder="不填为默认值" required></el-input>
-                    </el-form-item>
-                    <el-form-item label="定时规则" prop='rule'>
-                        <el-input v-model="dialog.taskInfo.rule" size="small" placeholder="请输入内容" required></el-input>
-                    </el-form-item>
-                    <el-form-item label="相关责任人" prop='owner'>
-                        <el-input v-model="dialog.taskInfo.owner" size="small" placeholder="异常将会告警这些人，以分号分隔"></el-input>
-                    </el-form-item>
+                    <el-tooltip class="item" effect="dark" content="任务名称确定后不可更改，用于确定任务对应的文件夹路径，可以设置多级任务 demo/node" placement="top-start">
+                        <el-form-item label="任务名称">
+                            <el-input v-model="dialog.taskInfo.taskName" size="small" placeholder="请输入内容" required :disabled="dialog.taskInfo.type !== 'add'"></el-input>
+                        </el-form-item>
+                    </el-tooltip>
+                    <el-tooltip class="item" effect="dark" content="默认采用批跑框架配置的执行器（不输入默认为node)，也可以给任务单独配置例如php，bash等执行器" placement="top-start">
+                        <el-form-item label="执行器">
+                            <el-input v-model="dialog.taskInfo.command" size="small" placeholder="不填为默认值" required></el-input>
+                        </el-form-item>
+                    </el-tooltip>
+                    <el-tooltip class="item" effect="dark" content="默认采用批跑框架配置的入口文件（不输入默认为index.js)，也可以给任务单独配置例如index.sh,index.php" placement="top-start">
+                        <el-form-item label="入口文件">
+                            <el-input v-model="dialog.taskInfo.entryFile" size="small" placeholder="不填为默认值" required></el-input>
+                        </el-form-item>
+                    </el-tooltip>
+                    <el-tooltip class="item" effect="dark" content="定时规则: 秒 分 时 日 月 周" placement="top-start">
+                        <el-form-item label="定时规则">
+                            <el-input v-model="dialog.taskInfo.rule" size="small" placeholder="请输入内容" required></el-input>
+                        </el-form-item>
+                    </el-tooltip>
+                    <el-tooltip class="item" effect="dark" content="告警及任务级别敏感操作，将通知相关人员，以分号分割" placement="top-start">
+                        <el-form-item label="相关责任人">
+                            <el-input v-model="dialog.taskInfo.owner" size="small" placeholder="异常将会告警这些人，以分号分隔"></el-input>
+                        </el-form-item>
+                    </el-tooltip>
                     <el-form-item label="title" prop='title'>
                         <el-input v-model="dialog.taskInfo.title" size="small" placeholder="标题"></el-input>
                     </el-form-item>
@@ -71,10 +81,16 @@
                     <el-form-item label="超时设置/秒" prop='timeout'>
                         <el-input v-model="dialog.taskInfo.timeout" size="small" type='number' placeholder="多久算超时"></el-input>
                     </el-form-item>
-                    <el-form-item label="状态" prop='taskStatus'>
+                    <el-form-item label="独立任务进程">
+                        <el-tooltip class="item" effect="dark" content="打开，则当批跑框架遇到异常退出，也不会导致正在运行的任务退出" placement="top-start">
+                            <el-switch v-model="dialog.taskInfo.detached"></el-switch>
+                        </el-tooltip>
+                    </el-form-item>
+                    <el-form-item label="状态">
                         <el-select v-model="dialog.taskInfo.taskStatus" placeholder="任务状态">
                             <el-option label="有效" :value="0"></el-option>
                             <el-option label="无效" :value="1"></el-option>
+                            <el-option v-if="dialog.taskInfo.taskStatus == 2" label="无效(正在杀死当前执行中的任务)" :value="1"></el-option>
                         </el-select>
                     </el-form-item>
                 </el-form>
@@ -167,7 +183,12 @@
             getTaskStatusTip(row) {
                 var taskStatusMap = ['有效', '无效', '无效(正在杀死当前执行中的任务)', '手动调用任务'];
                 var isTaskExec = this.isTaskExec(row);
-                return taskStatusMap[row.taskStatus] + (isTaskExec ? '-任务正在执行中' : '');
+
+                var tips = taskStatusMap[row.taskStatus] + (isTaskExec ? '-任务正在执行中' : '');
+                if(row.taskStatus == 1){
+                    tips = taskStatusMap[row.taskStatus] + (isTaskExec ? '-但上次任务尚未结束' : '');
+                }
+                return tips;
             },
             showTaskDialog(row) {
                 this.dialog.dialogFormVisible = true;
@@ -185,6 +206,7 @@
                     command: row.command,
                     entryFile: row.entryFile,
                     title: row.title,
+                    detached: row.detached == 1, // 是否独立子进程
                     description: row.description,
                     timeout: String(row.timeout),
                 };
@@ -230,8 +252,10 @@
                         });
                         this.getTaskList();
                     } else {
-                        this.$alert(res);
+                        this.$alert(res.data.retmsg);
                     }
+                }).catch((error)=>{
+                    this.$alert(error.message + '\n' + error.stack);
                 })
             },
             getTaskList: function () {

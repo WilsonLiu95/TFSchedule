@@ -148,7 +148,19 @@ function bindCgi() {
             sql = mysql.format(sqlTpl, valueList);
         }
         console.log(sql);
-        yield poolClient.query(sql);
+        try {
+            yield poolClient.query(sql);
+        } catch (error) {
+            console.error(error);
+            // detached Boolean Not NULL DEFAULT FALSE COMMENT '是否使任务进程成为独立进程，避免批跑框架退出导致正在运行的进程退出'
+            if (/Unknown column 'detached'/.test(error.message)) {
+                yield poolClient.query('ALTER TABLE t_task_list ADD detached Boolean Not NULL DEFAULT FALSE COMMENT "是否使任务进程成为独立进程，避免批跑框架退出导致正在运行的进程退出"');
+                // 新增字段后，再次尝试更新
+                yield poolClient.query(sql);
+                res.json({ retcode: 0 });
+            }
+            return res.json({retcode: -1, retmsg: `${error.message}\n${error.stack}`});
+        }
         res.json({ retcode: 0 });
     }));
 }

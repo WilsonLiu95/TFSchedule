@@ -8,12 +8,14 @@ var scheHandle = new TFSchedule({
         password: '1234',
         database: 'db_schedule'
     },
+    entryFile: 'index.js', // 设置默认的入口文件
+    command: 'node', // 设置默认的执行器
     taskRootPath: __dirname + '/task',
     notifyList: 'wilsonsliuxyz@gmail.com'
 });
 scheHandle.on('notify', function(notifyInfo) {
+    var { type, title, content, notifyList } = notifyInfo;
     try {
-        const { type, title, content, notifyList } = notifyInfo;
         console.log(`告警信息\n${JSON.stringify(notifyInfo)}`);
         title = 'TFSchedule批跑系统通知 ' + title;
         content = content || '';

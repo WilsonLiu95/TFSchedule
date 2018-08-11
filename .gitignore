@@ -8,5 +8,6 @@ example/task/demo/**/history/*
 example/task/demo/**/publish/*
 example/task/demo/**/logs/*
 
+*.log
 .vscode
 back_README.md

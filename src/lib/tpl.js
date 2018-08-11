@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS t_task_list (
     entryFile varchar(64) DEFAULT NULL COMMENT '执行器，即以什么来执行',
     taskVersion varchar(64) DEFAULT NULL COMMENT '当前运行任务的版本号',
     taskStatus tinyint(4) NOT NULL DEFAULT '0' COMMENT '任务的状态 0: 正常 1. 设置为无效(不影响当前正在运行的进程) 2. 设置为无效并且杀死当前进程',
+    detached Boolean Not NULL DEFAULT FALSE COMMENT '是否使任务进程成为独立进程，避免批跑框架退出导致正在运行的进程退出',
     timeout int(11) NOT NULL DEFAULT '60' COMMENT '每次任务多久算超时，以秒为单位',
     lastStartTime datetime DEFAULT CURRENT_TIMESTAMP COMMENT '上次任务开始的时间',
     lastEndTime datetime DEFAULT CURRENT_TIMESTAMP COMMENT '上次任务结束的时间',

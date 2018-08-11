@@ -56,6 +56,7 @@ function* spawnTask(taskInfo) {
     } = this;
     var {
         taskName,
+        detached,
         lastWarningTime,
         lastStartTime
     } = taskInfo;
@@ -91,7 +92,7 @@ function* spawnTask(taskInfo) {
         taskName,
         taskVersion
     });
-    childProcessHandleCache[taskName] = spawn(command, [taskExecFilePath]);
+    childProcessHandleCache[taskName] = spawn(command, [taskExecFilePath], { detached: detached === 1 });
     const taskPid = `(pid:${childProcessHandleCache[taskName].pid})`;
 
     console.log(`执行任务${taskName}-${taskPid}: ${command} ${taskExecFilePath}`);
@@ -131,8 +132,13 @@ function* spawnTask(taskInfo) {
         var content;
         try {
             if (signalCode) {
-                exitCode = 2; // 主动被杀死状态码为2
-                content = `(${taskName})-${taskPid}任务状态码taskStatus=2，父进程主动杀死子进程`;
+                if (signalCode === 'SIGHUP') {
+                    exitCode = 2; // 主动被杀死状态码为2
+                    content = `(${taskName})-${taskPid}父进程主动杀死子进程，退出信号 SIGHUP,退出码exitCode设置为2`;
+                } else {
+                    exitCode = 3; // 其他退出信号
+                    content = `(${taskName})-${taskPid}任务遇到未知退出信号${signalCode}, 退出码exitCode设置为3`;
+                }
             } else {
                 content = `(${taskName})-${taskPid}运行结束，退出码为${exitCode}`;
             }
