@@ -139,6 +139,7 @@ function* spawnTask(taskInfo) {
                     exitCode = 3; // 其他退出信号
                     content = `(${taskName})-${taskPid}任务遇到未知退出信号${signalCode}, 退出码exitCode设置为3`;
                 }
+                errorLogList.push(content);
             } else {
                 content = `(${taskName})-${taskPid}运行结束，退出码为${exitCode}`;
             }
