@@ -48,7 +48,7 @@
             <el-dialog title="任务信息" :visible.sync="dialog.dialogFormVisible" size="small">
                 <el-form :model="dialog.taskInfo" :rules="dialog.rules" ref="dialog_taskInfo" label-width="120px">
                     <el-tooltip class="item" effect="dark" content="任务名称确定后不可更改，用于确定任务对应的文件夹路径，可以设置多级任务 demo/node" placement="top-start">
-                        <el-form-item label="任务名称">
+                        <el-form-item label="任务名称" prop='taskName'>
                             <el-input v-model="dialog.taskInfo.taskName" size="small" placeholder="请输入内容" required :disabled="dialog.taskInfo.type !== 'add'"></el-input>
                         </el-form-item>
                     </el-tooltip>
@@ -63,13 +63,13 @@
                         </el-form-item>
                     </el-tooltip>
                     <el-tooltip class="item" effect="dark" content="定时规则: 秒 分 时 日 月 周" placement="top-start">
-                        <el-form-item label="定时规则">
+                        <el-form-item label="定时规则" prop='rule'>
                             <el-input v-model="dialog.taskInfo.rule" size="small" placeholder="请输入内容" required></el-input>
                         </el-form-item>
                     </el-tooltip>
                     <el-tooltip class="item" effect="dark" content="告警及任务级别敏感操作，将通知相关人员，以分号分割" placement="top-start">
-                        <el-form-item label="相关责任人">
-                            <el-input v-model="dialog.taskInfo.owner" size="small" placeholder="异常将会告警这些人，以分号分隔"></el-input>
+                        <el-form-item label="相关责任人" prop='owner'>
+                            <el-input v-model="dialog.taskInfo.owner" size="small" placeholder="异常将会告警这些人，以分号分隔" required></el-input>
                         </el-form-item>
                     </el-tooltip>
                     <el-form-item label="title" prop='title'>
@@ -86,7 +86,7 @@
                             <el-switch v-model="dialog.taskInfo.detached"></el-switch>
                         </el-tooltip>
                     </el-form-item>
-                    <el-form-item label="状态">
+                    <el-form-item label="状态" prop='taskStatus'>
                         <el-select v-model="dialog.taskInfo.taskStatus" placeholder="任务状态">
                             <el-option label="有效" :value="0"></el-option>
                             <el-option label="无效" :value="1"></el-option>
