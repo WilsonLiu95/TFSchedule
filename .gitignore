@@ -1,13 +1,9 @@
 node_modules
 
-example/task/**/publish/*
-example/task/**/logs/*
-example/task/**/history/*
-
-example/task/demo/**/history/*
-example/task/demo/**/publish/*
-example/task/demo/**/logs/*
-
+example/task/**/publish
+example/task/**/logs
+example/task/**/history
+example/task/clearTaskExecRecord
 *.log
 .vscode
 back_README.md

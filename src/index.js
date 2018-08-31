@@ -66,6 +66,7 @@ function TFSchedule(config) {
 
     this.command = command || 'node'; // 系统默认的执行器
     this.entryFile = entryFile || 'index.js'; // 系统默认的入口文件
+    this.lockMonitorHelper = false; // 锁定监控小助手
 
     var that = this;
     co(function* () {
@@ -100,22 +101,32 @@ TFSchedule.prototype = {
     startSystem: function* () {
         var {
             taskRuleMap,
-            mysqlClient,
-            notifyList
+            mysqlClient
         } = this;
         var that = this;
 
         // 1. 绑定监控小助手, 每3S运行一次
+        // 注：多个监控任务执行未退出，正值告警时刻~导致触发多条告警信息。因此对监控任务做限制，同时只允许一个任务执行
         console.log('========绑定监控小助手，3S执行一次=============');
         scheduleJob('monitorHelper', '*/3 * * * * *', () => {
             co(function* () {
-                yield that.monitorHelper();
+                // 标记开始，锁定不允许再次执行监控
+                if (that.lockMonitorHelper === false) {
+                    that.lockMonitorHelper = true;
+                    yield that.monitorHelper();
+                    // 标记结束，放开锁定
+                    that.lockMonitorHelper = false;
+                } else {
+                    that.emit('notify', {
+                        title: '监控小助手执行超时',
+                        content: '执行超过3秒尚未退出，请注意~'
+                    });
+                }
             });
         });
         // 2. 查询数据库中所有任务
         var taskListRes = yield mysqlClient.query('select taskName,rule from t_task_list');
         this.emit('notify', {
-            notifyList,
             title: `批跑系统开始启动,共有${taskListRes.length}项定时任务`,
             content: JSON.stringify(taskListRes)
         });

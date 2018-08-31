@@ -67,7 +67,8 @@ function* checkIsKillTask(taskInfo) {
             delete childProcessHandleCache[taskName];
             this.emit('taskLevelNotify', {
                 type: 'killTask',
-                taskName, taskVersion,
+                taskName,
+                taskVersion,
                 title: `${taskName} (killTask)`,
                 content: '任务被手动杀死'
             });
@@ -110,7 +111,8 @@ function* checkTaskOutTime(taskInfo) {
 
         this.emit('taskLevelNotify', {
             type: 'outtimeTask',
-            taskName, taskVersion,
+            taskName,
+            taskVersion,
             title: `${taskName} (outtimeTask)`,
             content: `任务超时设置时间为${timeout}秒，本次任务开始时间${lastStartTimeStr}, 截止目前${deadTimeStr}，执行任务超时`
         });
@@ -162,7 +164,8 @@ function* checkIsPassExec(taskInfo) {
 }
 
 // 小助手5： 任务在数据库中被删除告警用户
-function checkTaskIsDelete(taskRuleMap, dbCurrentTaskList) {
+function checkTaskIsDelete(dbCurrentTaskList) {
+    var { taskRuleMap } = this;
     var deleteTaskList = [];
     Object.keys(taskRuleMap).map(taskName => {
         var isExistsTask = false;
@@ -203,8 +206,7 @@ function* checkIsRunTaskAgain({
 function* monitorHelper() {
     var that = this;
     var {
-        mysqlClient,
-        taskRuleMap
+        mysqlClient
     } = this;
     try {
         const monitorStartTime = Date.now();
@@ -212,18 +214,17 @@ function* monitorHelper() {
         const dbCurrentTaskList = yield mysqlClient.query('select * from t_task_list');
 
         // 小助手5： 任务被删除告警
-        checkTaskIsDelete.apply(that, [taskRuleMap, dbCurrentTaskList]);
+        checkTaskIsDelete.apply(that, [dbCurrentTaskList]);
 
-        yield dbCurrentTaskList.map(taskInfo => {
-            return function* () {
-                // 小助手1：任务rule修改与新增任务 进行定时器挂载
-                yield checkLoadTask.apply(that, [taskInfo]);
-
-                yield checkIsKillTask.apply(that, [taskInfo]); // 小助手2：校验是否杀死进程
-                yield checkIsPassExec.apply(that, [taskInfo]); // 小助手3：检验任务是否漏执行
-                yield checkTaskOutTime.apply(that, [taskInfo]); // 小助手4： 检验任务是否允许超时
-                yield checkIsRunTaskAgain.apply(that, [taskInfo]);
-            };
+        yield dbCurrentTaskList.map(function* (taskInfo) {
+            // 并发执行
+            yield ([
+                checkLoadTask.apply(that, [taskInfo]), // 小助手1：任务rule修改与新增任务 进行定时器挂载
+                checkIsKillTask.apply(that, [taskInfo]), // 小助手2：校验是否杀死进程
+                checkIsPassExec.apply(that, [taskInfo]), // 小助手3：检验任务是否漏执行
+                checkTaskOutTime.apply(that, [taskInfo]), // 小助手4： 检验任务是否允许超时
+                checkIsRunTaskAgain.apply(that, [taskInfo]) // 小助手6： 手动执行任务
+            ]);
         });
         const duration = Date.now() - monitorStartTime;
         if (duration > 1000) { // 如果执行时间超过1S则输出标记
