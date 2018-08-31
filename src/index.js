@@ -101,6 +101,7 @@ TFSchedule.prototype = {
     startSystem: function* () {
         var {
             taskRuleMap,
+            notifyList,
             mysqlClient
         } = this;
         var that = this;
@@ -118,6 +119,8 @@ TFSchedule.prototype = {
                     that.lockMonitorHelper = false;
                 } else {
                     that.emit('notify', {
+                        type: 'systemNotify',
+                        notifyList,
                         title: '监控小助手执行超时',
                         content: '执行超过3秒尚未退出，请注意~'
                     });
@@ -127,6 +130,8 @@ TFSchedule.prototype = {
         // 2. 查询数据库中所有任务
         var taskListRes = yield mysqlClient.query('select taskName,rule from t_task_list');
         this.emit('notify', {
+            type: 'systemNotify',
+            notifyList,
             title: `批跑系统开始启动,共有${taskListRes.length}项定时任务`,
             content: JSON.stringify(taskListRes)
         });
