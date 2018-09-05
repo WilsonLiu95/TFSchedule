@@ -19,7 +19,7 @@ function* execTask(taskName) {
         }
         const taskInfo = data[0];
         const {
-            taskStatus
+            taskStatus, title
         } = taskInfo;
 
         /**
@@ -31,7 +31,7 @@ function* execTask(taskName) {
             return this.emit('taskLevelNotify', {
                 type: 'lastJobHasNotEnd',
                 taskName,
-                title: `${taskName} (lastJobHasNotEnd)`,
+                title: `${taskName} ${title} (lastJobHasNotEnd)`,
                 content: '任务当前正在执行未退出,跳过本次运行'
             });
         }
@@ -56,6 +56,7 @@ function* spawnTask(taskInfo) {
     } = this;
     var {
         taskName,
+        title,
         detached,
         lastWarningTime,
         lastStartTime
@@ -76,7 +77,7 @@ function* spawnTask(taskInfo) {
             this.emit('taskLevelNotify', {
                 type: 'entryFileIsNotExists',
                 taskName,
-                title: `${taskName} (entryFileIsNotExists)`,
+                title: `${taskName} ${title} (entryFileIsNotExists)`,
                 content: `${path.join(taskName, entryFile)} 入口文件不存在`
             });
         }
