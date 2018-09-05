@@ -118,12 +118,13 @@ TFSchedule.prototype = {
                     // 标记结束，放开锁定
                     that.lockMonitorHelper = false;
                 } else {
-                    that.emit('notify', {
-                        type: 'systemNotify',
-                        notifyList,
-                        title: '监控小助手执行超时',
-                        content: '执行超过3秒尚未退出，请注意~'
-                    });
+                    console.log('监控小助手执行超时 执行超过3秒尚未退出，请注意~');
+                    // that.emit('notify', {
+                    //     type: 'systemNotify',
+                    //     notifyList,
+                    //     title: '监控小助手执行超时',
+                    //     content: '执行超过3秒尚未退出，请注意~'
+                    // });
                 }
             });
         });
