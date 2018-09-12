@@ -135,6 +135,7 @@ function bindCgi() {
             // 更新任务
             const taskName = taskInfo.taskName;
             delete taskInfo.taskName;
+            taskInfo.modify_time = moment().format('YYYY-MM-DD HH:mm:ss');
             if (!taskName) {
                 return res.json({ retcode: 1, retmsg: '请输入任务名称' });
             }
