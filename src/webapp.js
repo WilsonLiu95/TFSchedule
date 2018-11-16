@@ -183,7 +183,9 @@ function checkValidateTask(taskInfo) {
             rule
         } = taskInfo;
         // 校验任务规则是否可以解析
-        parser.parseExpression(rule);
+        if (rule) {
+            parser.parseExpression(rule);
+        }
     } catch (err) {
         console.error(err);
         return {isValidate: false, errMsg: err.message};

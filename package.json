@@ -1,6 +1,6 @@
 {
   "name": "tfschedule",
-  "version": "2.6.4",
+  "version": "2.6.5",
   "description": "定时脚本管理系统",
   "main": "src/index.js",
   "scripts": {
